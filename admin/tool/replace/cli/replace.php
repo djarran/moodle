@@ -62,6 +62,25 @@ if ($options['help'] || $options['search'] === null || $options['replace'] === n
     exit(0);
 }
 
+// 
+if ($unrecognized) {
+    $unrecognized = implode(PHP_EOL.'  ', $unrecognized);
+    cli_error(get_string('cliunknowoption', 'core_admin', $unrecognized));
+}
+
+if ($options['search'] == true || $options['replace'] == true) {
+    
+    echo get_string('clipotentialerror', 'tool_replace') . "\n\n";
+    echo get_string('clisearchvalue', 'tool_replace', $options['search']) . "\n";
+    echo get_string('clireplacevalue', 'tool_replace', $options['replace']) . "\n";
+
+    $prompt = get_string('cliyesnoprompt', 'admin');
+    $input = cli_input($prompt, '', array(get_string('clianswerno', 'admin'), get_string('cliansweryes', 'admin')));
+    if ($input == get_string('clianswerno', 'admin')) {
+        exit(1);
+    }
+}
+
 if (!$DB->replace_all_text_supported()) {
     cli_error(get_string('notimplemented', 'tool_replace'));
 }
