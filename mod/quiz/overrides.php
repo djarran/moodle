@@ -22,6 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use mod_quiz\overrides_table;
 use mod_quiz\quiz_settings;
 
 require_once(__DIR__ . '/../../config.php');
@@ -30,6 +31,7 @@ require_once($CFG->dirroot.'/mod/quiz/locallib.php');
 
 $cmid = required_param('cmid', PARAM_INT);
 $mode = optional_param('mode', '', PARAM_ALPHA); // One of 'user' or 'group', default is 'group'.
+$download = optional_param('download', '', PARAM_ALPHA);
 
 $quizobj = quiz_settings::create_for_cmid($cmid);
 $quiz = $quizobj->get_quiz();
@@ -66,8 +68,9 @@ $url = new moodle_url('/mod/quiz/overrides.php', ['cmid' => $cm->id, 'mode' => $
 $title = get_string('overridesforquiz', 'quiz',
         format_string($quiz->name, true, ['context' => $context]));
 $PAGE->set_url($url);
-$PAGE->set_pagelayout('admin');
-$PAGE->add_body_class('limitedwidth');
+// $PAGE->set_pagelayout('admin');
+$PAGE->set_pagelayout('report');
+// $PAGE->add_body_class('limitedwidth');
 $PAGE->set_title($title);
 $PAGE->set_heading($course->fullname);
 $PAGE->activityheader->disable();
@@ -76,6 +79,7 @@ $PAGE->activityheader->disable();
 $PAGE->set_secondary_active_tab("mod_quiz_useroverrides");
 
 // Delete orphaned group overrides.
+// Keep this.
 $sql = 'SELECT o.id
           FROM {quiz_overrides} o
      LEFT JOIN {groups} g ON o.groupid = g.id
@@ -86,222 +90,6 @@ $params = [$quiz->id];
 $orphaned = $DB->get_records_sql($sql, $params);
 if (!empty($orphaned)) {
     $DB->delete_records_list('quiz_overrides', 'id', array_keys($orphaned));
-}
-
-$overrides = [];
-$colclasses = [];
-$headers = [];
-
-// Fetch all overrides.
-if ($groupmode) {
-    $headers[] = get_string('group');
-    // To filter the result by the list of groups that the current user has access to.
-    if ($groups) {
-        $params = ['quizid' => $quiz->id];
-        list($insql, $inparams) = $DB->get_in_or_equal(array_keys($groups), SQL_PARAMS_NAMED);
-        $params += $inparams;
-
-        $sql = "SELECT o.*, g.name
-                  FROM {quiz_overrides} o
-                  JOIN {groups} g ON o.groupid = g.id
-                 WHERE o.quiz = :quizid AND g.id $insql
-              ORDER BY g.name";
-
-        $overrides = $DB->get_records_sql($sql, $params);
-    }
-
-} else {
-    // User overrides.
-    $colclasses[] = 'colname';
-    $headers[] = get_string('user');
-    $userfieldsapi = \core_user\fields::for_identity($context)->with_name()->with_userpic();
-    $extrauserfields = $userfieldsapi->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]);
-    $userfieldssql = $userfieldsapi->get_sql('u', true, '', 'userid', false);
-    foreach ($extrauserfields as $field) {
-        $colclasses[] = 'col' . $field;
-        $headers[] = \core_user\fields::get_display_name($field);
-    }
-
-    list($sort, $params) = users_order_by_sql('u', null, $context, $extrauserfields);
-    $params['quizid'] = $quiz->id;
-
-    if ($showallgroups) {
-        $groupsjoin = '';
-        $groupswhere = '';
-
-    } else if ($groups) {
-        list($insql, $inparams) = $DB->get_in_or_equal(array_keys($groups), SQL_PARAMS_NAMED);
-        $groupsjoin = 'JOIN {groups_members} gm ON u.id = gm.userid';
-        $groupswhere = ' AND gm.groupid ' . $insql;
-        $params += $inparams;
-
-    } else {
-        // User cannot see any data.
-        $groupsjoin = '';
-        $groupswhere = ' AND 1 = 2';
-    }
-
-    $overrides = $DB->get_records_sql("
-            SELECT o.*, {$userfieldssql->selects}
-              FROM {quiz_overrides} o
-              JOIN {user} u ON o.userid = u.id
-                  {$userfieldssql->joins}
-              $groupsjoin
-             WHERE o.quiz = :quizid
-               $groupswhere
-             ORDER BY $sort
-            ", array_merge($params, $userfieldssql->params));
-}
-
-// Initialise table.
-$table = new html_table();
-$table->head = $headers;
-$table->colclasses = $colclasses;
-$table->headspan = array_fill(0, count($headers), 1);
-
-$table->head[] = get_string('overrides', 'quiz');
-$table->colclasses[] = 'colsetting';
-$table->colclasses[] = 'colvalue';
-$table->headspan[] = 2;
-
-if ($canedit) {
-    $table->head[] = get_string('action');
-    $table->colclasses[] = 'colaction';
-    $table->headspan[] = 1;
-}
-$userurl = new moodle_url('/user/view.php', []);
-$groupurl = new moodle_url('/group/overview.php', ['id' => $cm->course]);
-
-$overridedeleteurl = new moodle_url('/mod/quiz/overridedelete.php');
-$overrideediturl = new moodle_url('/mod/quiz/overrideedit.php');
-
-$hasinactive = false; // Whether there are any inactive overrides.
-
-foreach ($overrides as $override) {
-
-    // Check if this override is active.
-    $active = true;
-    if (!$groupmode) {
-        if (!has_capability('mod/quiz:attempt', $context, $override->userid)) {
-            // User not allowed to take the quiz.
-            $active = false;
-        } else if (!\core_availability\info_module::is_user_visible($cm, $override->userid)) {
-            // User cannot access the module.
-            $active = false;
-        }
-    }
-    if (!$active) {
-        $hasinactive = true;
-    }
-
-    // Prepare the information about which settings are overridden.
-    $fields = [];
-    $values = [];
-
-    // Format timeopen.
-    if (isset($override->timeopen)) {
-        $fields[] = get_string('quizopens', 'quiz');
-        $values[] = $override->timeopen > 0 ?
-                userdate($override->timeopen) : get_string('noopen', 'quiz');
-    }
-    // Format timeclose.
-    if (isset($override->timeclose)) {
-        $fields[] = get_string('quizcloses', 'quiz');
-        $values[] = $override->timeclose > 0 ?
-                userdate($override->timeclose) : get_string('noclose', 'quiz');
-    }
-    // Format timelimit.
-    if (isset($override->timelimit)) {
-        $fields[] = get_string('timelimit', 'quiz');
-        $values[] = $override->timelimit > 0 ?
-                format_time($override->timelimit) : get_string('none', 'quiz');
-    }
-    // Format number of attempts.
-    if (isset($override->attempts)) {
-        $fields[] = get_string('attempts', 'quiz');
-        $values[] = $override->attempts > 0 ?
-                $override->attempts : get_string('unlimited');
-    }
-    // Format password.
-    if (isset($override->password)) {
-        $fields[] = get_string('requirepassword', 'quiz');
-        $values[] = $override->password !== '' ?
-                get_string('enabled', 'quiz') : get_string('none', 'quiz');
-    }
-
-    // Prepare the information about who this override applies to.
-    $extranamebit = $active ? '' : '*';
-    $usercells = [];
-    if ($groupmode) {
-        $groupcell = new html_table_cell();
-        $groupcell->rowspan = count($fields);
-        $groupcell->text = html_writer::link(new moodle_url($groupurl, ['group' => $override->groupid]),
-            format_string($override->name, true, ['context' => $context]) . $extranamebit);
-        $usercells[] = $groupcell;
-    } else {
-        $usercell = new html_table_cell();
-        $usercell->rowspan = count($fields);
-        $usercell->text = html_writer::link(new moodle_url($userurl, ['id' => $override->userid]),
-                fullname($override) . $extranamebit);
-        $usercells[] = $usercell;
-
-        foreach ($extrauserfields as $field) {
-            $usercell = new html_table_cell();
-            $usercell->rowspan = count($fields);
-            $usercell->text = s($override->$field);
-            $usercells[] = $usercell;
-        }
-    }
-
-    // Prepare the actions.
-    if ($canedit) {
-        // Icons.
-        $iconstr = '';
-
-        // Edit.
-        $editurlstr = $overrideediturl->out(true, ['id' => $override->id]);
-        $iconstr = '<a title="' . get_string('edit') . '" href="' . $editurlstr . '">' .
-                $OUTPUT->pix_icon('t/edit', get_string('edit')) . '</a> ';
-        // Duplicate.
-        $copyurlstr = $overrideediturl->out(true,
-                ['id' => $override->id, 'action' => 'duplicate']);
-        $iconstr .= '<a title="' . get_string('copy') . '" href="' . $copyurlstr . '">' .
-                $OUTPUT->pix_icon('t/copy', get_string('copy')) . '</a> ';
-        // Delete.
-        $deleteurlstr = $overridedeleteurl->out(true,
-                ['id' => $override->id, 'sesskey' => sesskey()]);
-        $iconstr .= '<a title="' . get_string('delete') . '" href="' . $deleteurlstr . '">' .
-                $OUTPUT->pix_icon('t/delete', get_string('delete')) . '</a> ';
-
-        $actioncell = new html_table_cell();
-        $actioncell->rowspan = count($fields);
-        $actioncell->text = $iconstr;
-    }
-
-    // Add the data to the table.
-    for ($i = 0; $i < count($fields); ++$i) {
-        $row = new html_table_row();
-        if (!$active) {
-            $row->attributes['class'] = 'dimmed_text';
-        }
-
-        if ($i == 0) {
-            $row->cells = $usercells;
-        }
-
-        $labelcell = new html_table_cell();
-        $labelcell->text = $fields[$i];
-        $row->cells[] = $labelcell;
-        $valuecell = new html_table_cell();
-        $valuecell->text = $values[$i];
-        $row->cells[] = $valuecell;
-
-        if ($canedit && $i == 0) {
-            $row->cells[] = $actioncell;
-        }
-
-        $table->data[] = $row;
-    }
 }
 
 // Work out what else needs to be displayed.
@@ -337,8 +125,70 @@ if ($canedit) {
     }
 }
 
+
+$table = new overrides_table('uniqueid', $mode, $cm, $context, $download);
+$table->define_baseurl(new moodle_url('overrides.php', ['cmid' => $cmid, 'mode' => $mode]));
+
+if ($mode == 'user') {
+    // User overrides.
+    $userfieldsapi = \core_user\fields::for_identity($context)->with_name()->with_userpic();
+    $extrauserfields = $userfieldsapi->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]);
+    $userfieldssql = $userfieldsapi->get_sql('u', true, '', 'userid', false);
+    foreach ($extrauserfields as $field) {
+        $colclasses[] = 'col' . $field;
+        $headers[] = \core_user\fields::get_display_name($field);
+    }
+
+    list($sort, $params) = users_order_by_sql('u', null, $context, $extrauserfields);
+    $params['quizid'] = $quiz->id;
+
+    if ($showallgroups) {
+        $groupsjoin = '';
+        $groupswhere = '';
+
+    } else if ($groups) {
+        list($insql, $inparams) = $DB->get_in_or_equal(array_keys($groups), SQL_PARAMS_NAMED);
+        $groupsjoin = 'JOIN {groups_members} gm ON u.id = gm.userid';
+        $groupswhere = ' AND gm.groupid ' . $insql;
+        $params += $inparams;
+
+    } else {
+        // User cannot see any data.
+        $groupsjoin = '';
+        $groupswhere = ' AND 1 = 2';
+    }
+
+    $table->set_sql("o.*, {$userfieldssql->selects}", "{quiz_overrides} o 
+              JOIN {user} u ON o.userid = u.id
+                  {$userfieldssql->joins}
+              $groupsjoin
+              ", "o.quiz = :quizid
+              $groupswhere", array_merge($params, $userfieldssql->params));
+} else {
+      $sqlparams = array();
+      $sqlparams['quizid'] = $quiz->id;
+      $table->set_sql('o.*, g.name', "{quiz_overrides} o JOIN {groups} g ON o.groupid = g.id", 'o.quiz = :quizid', $sqlparams);
+}
+
+// Must be executed before header and footer outputs.
+if ($download) {
+    $courseshortname = format_string($course->shortname, true,
+            ['context' => context_course::instance($course->id)]);
+    $table->is_downloading($download, $courseshortname . '-' . format_string($quiz->name, true) . '-' . $mode . 'overrides' . '-' . date('Ymd'));
+    raise_memory_limit(MEMORY_EXTRA);
+    $table->out(20, false);
+    exit();
+}
+
 // Tertiary navigation.
 echo $OUTPUT->header();
+
+
+if (!empty($SESSION->quiz_import_success)) {
+    echo $OUTPUT->notification($SESSION->quiz_import_success, 'success');
+    unset($SESSION->quiz_import_success); // Clear the error message after displaying it
+}
+
 $renderer = $PAGE->get_renderer('mod_quiz');
 $tertiarynav = new \mod_quiz\output\overrides_actions($cmid, $mode, $canedit, $addenabled);
 echo $renderer->render($tertiarynav);
@@ -351,16 +201,19 @@ if ($mode === 'user') {
 
 // Output the table and button.
 echo html_writer::start_tag('div', ['id' => 'quizoverrides']);
-if (count($table->data)) {
-    echo html_writer::table($table);
-} else {
+
+$table->out(10, true);
+
+if ($table->totalrows == 0) {
     if ($groupmode) {
         echo $OUTPUT->notification(get_string('overridesnoneforgroups', 'quiz'), 'info', false);
     } else {
         echo $OUTPUT->notification(get_string('overridesnoneforusers', 'quiz'), 'info', false);
     }
+} else {
 }
-if ($hasinactive) {
+
+if ($table->hasinactive) {
     echo $OUTPUT->notification(get_string('inactiveoverridehelp', 'quiz'), 'info', false);
 }
 

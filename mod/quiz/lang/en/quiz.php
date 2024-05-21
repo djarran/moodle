@@ -1111,9 +1111,41 @@ $string['questionversionlatest'] = 'v{$a} (latest)';
 $string['alwayslatest'] = 'Always latest';
 $string['gobacktoquiz'] = 'Go back';
 
+$string['errorincorrectcolumns'] = 'CSV does not contain the correct number of columns.';
+$string['errorincorrectheaders'] = 'CSV does not contain the correct headers. Please refer to the example.csv.';
+$string['errorgroupnotfound'] = 'Instance of group with name \'{$a}\' could not be found';
+$string['errormultiplegroups'] = 'Group {$a} has multiple instances in this course with this name. Cannot determine the correct ID. Please include a reference to the correct group ID within the CSV';
+$string['erroridempty'] = 'ID cannot be empty.';
+$string['errorusernotexist'] = 'User with ID {$a} does not exist.';
+$string['errorgroupnotexist'] = 'Group with ID {$a} does not exist.';
+$string['errorinvaliddatetime'] = 'Invalid datetime format used in {$a} column.';
+$string['erroropenclose'] = 'Quiz opens time must be before quiz closes time.';
+$string['exampleimportcsv'] = 'Example CSV File';
+$string['exampleimportcsv_help'] = 'To use the example text file, download it then open it with a text or spreadsheet editor. Leave the first line unchanged, then edit the following lines (records) and add your override data, adding more lines as necessary. Save the file as CSV then upload it.';
+$string['csvdelimiter'] = 'CSV separator';
+$string['csvdelimiter_help'] = 'The character separating the series of data in each record.';
+$string['encoding'] = 'Encoding';
+$string['import'] = 'Import';
+$string['importgroup'] = 'Import Group CSV';
+$string['importuser'] = 'Import User CSV';
+$string['importsuccess'] = 'Overrides successfully imported.';
+$string['errortimelimit'] = 'Invalid time limit value "{$a}". It must be a non-negative integer or "Unlimited".';
+$string['errorattempts'] = 'Invalid attempts value "{$a}". It must be a non-negative integer or "Unlimited".';
+$string['errordbinsert'] = 'Error occurred during database insert: {$a}';
+$string['importfail'] = 'No overrides were imported due to the following error(s):<br>';
+
+// Deprecated since Moodle 4.0.
+$string['completionpass'] = 'Require passing grade';
+$string['completionpassdesc'] = 'Student must achieve a passing grade to complete this activity';
+$string['completionpass_help'] = 'If enabled, this activity is considered complete when the student receives a pass grade (as specified in the Grade section of the quiz settings) or higher.';
+$string['completiondetail:passgrade'] = 'Receive a pass grade';
+$string['gradetopassnotset'] = 'This quiz does not yet have a grade to pass set. It may be set in the Grade section of the quiz settings.';
+$string['basicideasofquiz'] = 'The basic ideas of quiz-making';
+
 // Deprecated since Moodle 4.3.
 $string['completionminattemptsgroup'] = 'Require attempts';
 
 // Deprecated since Moodle 4.4.
 $string['grade'] = 'Grade';
 $string['timetaken'] = 'Time taken';
+

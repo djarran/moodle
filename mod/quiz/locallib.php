@@ -2144,3 +2144,4 @@ function quiz_create_attempt_handling_errors($attemptid, $cmid = null) {
         return $attempobj;
     }
 }
+
