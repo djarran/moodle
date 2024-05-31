@@ -236,7 +236,7 @@ class locallib_test extends \advanced_testcase {
      * Test submissions with extension date.
      */
     public function test_gradingtable_extension_due_date(): void {
-        global $PAGE;
+        global $PAGE, $DB;
 
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
@@ -268,6 +268,8 @@ class locallib_test extends \advanced_testcase {
         $output = $assign->get_renderer()->render($gradingtable);
         $this->assertStringContainsString(get_string('submissionstatus_', 'assign'), $output);
         $this->assertStringContainsString(get_string('userextensiondate', 'assign', userdate($extendedtime)), $output);
+        $event = $DB->record_exists('event', ['userid' => $student->id, 'eventtype' => ASSIGN_EVENT_TYPE_EXTENSION]);
+        $this->assertTrue($event);
 
         // Simulate a submission.
         $this->setUser($student);

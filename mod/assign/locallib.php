@@ -88,6 +88,7 @@ define('ASSIGN_EVENT_TYPE_DUE', 'due');
 define('ASSIGN_EVENT_TYPE_GRADINGDUE', 'gradingdue');
 define('ASSIGN_EVENT_TYPE_OPEN', 'open');
 define('ASSIGN_EVENT_TYPE_CLOSE', 'close');
+define('ASSIGN_EVENT_TYPE_EXTENSION', 'extension');
 
 require_once($CFG->libdir . '/accesslib.php');
 require_once($CFG->libdir . '/formslib.php');
@@ -6933,6 +6934,32 @@ class assign {
 
         if ($result) {
             \mod_assign\event\extension_granted::create_from_assign($this, $userid)->trigger();
+
+            // Delete any existing extension event for the user.
+            $DB->delete_records('event', ['userid' => $userid, 'eventtype' => ASSIGN_EVENT_TYPE_EXTENSION]);
+
+            if ($extensionduedate) {
+                $cm = $this->get_course_module();
+                $instance = $this->get_instance();
+
+                $event = new stdClass();
+                $event->type          = CALENDAR_EVENT_TYPE_ACTION;
+                $event->name          = get_string('calendarextension', 'assign', $instance->name);
+                $event->description   = format_module_intro('assign', $instance, $cm->id);
+                $event->format        = FORMAT_HTML;
+                $event->courseid      = $this->get_course()->id;
+                $event->groupid       = 0; // Set groupid to 0 since this is a user extension.
+                $event->userid        = $userid;
+                $event->modulename    = 'assign';
+                $event->instance      = $instance->id;
+                $event->timestart     = $extensionduedate;
+                $event->timeduration  = 0; // Unknown if this should be set for an extension.
+                $event->visible       = instance_is_visible('assign', $instance);
+                $event->eventtype     = ASSIGN_EVENT_TYPE_EXTENSION;
+                $event->priority      = null;
+
+                calendar_event::create($event, false);
+            }
         }
         return $result;
     }
