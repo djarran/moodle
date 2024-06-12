@@ -287,7 +287,9 @@ class events_test extends \advanced_testcase {
         $assign->testable_save_user_extension($student->id, $tomorrow);
 
         $events = $sink->get_events();
-        $this->assertCount(1, $events);
+
+        // Event for extension granted and extension due date.
+        $this->assertCount(2, $events);
         $event = reset($events);
         $this->assertInstanceOf('\mod_assign\event\extension_granted', $event);
         $this->assertEquals($assign->get_context(), $event->get_context());
