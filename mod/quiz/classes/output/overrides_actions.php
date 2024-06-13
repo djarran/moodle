@@ -95,11 +95,7 @@ class overrides_actions implements renderable, templatable {
         $addoverrideurl = new moodle_url('/mod/quiz/overrideimport.php',
                 ['cmid' => $this->cmid, 'mode' => $this->mode]);
 
-        if ($this->mode === 'group') {
-            $label = 'Import group overrides';
-        } else {
-            $label = 'Import user overrides';
-        }
+        $label = get_string('importoverrides', 'quiz', $this->mode);
 
         $addoverridebutton = new \single_button($addoverrideurl, $label, 'get', \single_button::BUTTON_PRIMARY);
 
