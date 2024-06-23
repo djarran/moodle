@@ -691,6 +691,7 @@ $string['overduehandlinggraceperiod'] = 'There is a grace period when open attem
 $string['overduehandlingautoabandon'] = 'Attempts must be submitted before time expires, or they are not counted';
 $string['overduemustbesubmittedby'] = 'This attempt is now overdue. It should already have been submitted. If you would like this quiz to be graded, you must submit it by {$a}. If you do not submit it by then, no marks from this attempt will be counted.';
 $string['override'] = 'Override';
+$string['overridedownload'] = 'Download overrides';
 $string['overridecannotchange'] = 'The user or group cannot be changed after an override is created.';
 $string['overridecannotsetbothgroupanduser'] = 'Both group and user cannot be set at the same time.';
 $string['overridedeletegroupsure'] = 'Are you sure you want to delete the override for group {$a}?';

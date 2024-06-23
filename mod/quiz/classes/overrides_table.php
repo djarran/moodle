@@ -64,6 +64,11 @@ class overrides_table extends table_sql {
     protected $ispreview;
 
     /**
+     * @var bool $canedit Indicates if the user viewing the table can edit overrides.
+     */
+    protected $canedit;
+
+    /**
      * @var string $mode The mode - either 'group' or 'user'.
      */
     protected $mode;
@@ -81,14 +86,16 @@ class overrides_table extends table_sql {
      * @param cm_info $cm The course module information.
      * @param stdClass $context The context information.
      * @param bool $ispreview Optional parameter to indicate if this is a preview mode.
+     * @param bool $canedit Optional parameter to indicate if user can edit overrides.
      */
-    public function __construct(string $uniqueid, string $mode, cm_info $cm, stdClass $context, bool $ispreview = false) {
+    public function __construct(string $uniqueid, string $mode, cm_info $cm, stdClass $context, bool $ispreview = false, bool $canedit = true) {
         parent::__construct($uniqueid);
 
         $this->cm = $cm;
         $this->context = $context;
         $this->mode = $mode;
         $this->ispreview = $ispreview;
+        $this->canedit = $canedit;
 
         // Set table config.
         $this->set_columns_and_headers();
@@ -113,9 +120,12 @@ class overrides_table extends table_sql {
             $nameheader = $this->mode == 'group' ? 'Group' : 'User';
             $this->define_headers(array_merge(['CSV Row', 'Action', $nameheader], $overrideheaders, ['Generate', 'Errors']));
         } else {
+
+            $combinedcolumns = [];
+            $combinedheaders = [];
             if ($this->mode == 'group') {
-                $this->define_columns(array_merge(['name'], $overridecolumns, ['actions']));
-                $this->define_headers(array_merge(['Group'], $overrideheaders, ['Actions']));
+                $combinedcolumns = array_merge(['name'], $overridecolumns);
+                $combinedheaders = array_merge(['Group'], $overrideheaders);
             } else {
                 // Get additional user fields.
                 $userfieldsapi = \core_user\fields::for_identity($this->context)->with_name()->with_userpic();
@@ -123,10 +133,20 @@ class overrides_table extends table_sql {
                 $additionalcolumns = $useridentityfields;
                 $additionalheaders = array_map([\core_user\fields::class, 'get_display_name'], $useridentityfields);
 
-                $this->define_columns(array_merge(['name'], $additionalcolumns, $overridecolumns, ['actions']));
-                $this->define_headers(array_merge(['User'], $additionalheaders, $overrideheaders, ['Actions']));
+                $combinedcolumns = array_merge(['name'], $additionalcolumns, $overridecolumns);
+                $combinedheaders = array_merge(['User'], $additionalheaders, $overrideheaders);
             }
+
+            // Add action header and column.
+            if ($this->canedit) {
+                $combinedcolumns = array_merge($combinedcolumns, ['actions']);
+                $combinedheaders = array_merge($combinedheaders, ['Actions']);
+            }
+
+            $this->define_columns($combinedcolumns);
+            $this->define_headers($combinedheaders);
         }
+
     }
 
     /**
@@ -165,6 +185,11 @@ class overrides_table extends table_sql {
      * @return bool True if the override is active, false otherwise.
      */
     private function is_active(stdClass $row): bool {
+
+        // This class does not apply to group overrides.
+        if ($this->mode == 'group') {
+            return true;
+        }
 
         $active = true;
         if (!has_capability('mod/quiz:attempt', $this->context, $row->userid)) {

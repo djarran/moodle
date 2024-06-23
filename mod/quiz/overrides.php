@@ -76,57 +76,77 @@ $addenabled = true;
 
 // Check to see if there are any users or groups that can be added.
 // If not, disable the add button.
+$warningmessage = '';
 if ($canedit) {
     if ($groupmode) {
         if (empty($groups)) {
             // There are no groups.
+            $warningmessage = get_string('groupsnone', 'quiz');
             $addenabled = false;
         }
     } else {
         // See if there are any students in the quiz.
         if ($showallgroups) {
             $users = get_users_by_capability($context, 'mod/quiz:attempt', 'u.id');
+            $nousermessage = get_string('usersnone', 'quiz');
         } else if ($groups) {
             $users = get_users_by_capability($context, 'mod/quiz:attempt', 'u.id', '', '', '', array_keys($groups));
+            $nousermessage = get_string('usersnone', 'quiz');
         } else {
             $users = [];
+            $nousermessage = get_string('groupsnone', 'quiz');
         }
         $info = new \core_availability\info_module($cm);
         $users = $info->filter_user_list($users);
 
         if (empty($users)) {
             $addenabled = false;
+            $warningmessage = $nousermessage;
         }
     }
 }
 
-$table = new overrides_table('uniqueid', $mode, $cm, $context);
+$table = new overrides_table('Overrides', $mode, $cm, $context, false, $canedit);
 $table->define_baseurl(new moodle_url('overrides.php', ['cmid' => $cmid, 'mode' => $mode]));
 
 // Set query to be used by overrides_table.
 if ($mode == 'group') {
     $params = ['quizid' => $quiz->id];
 
-    // To filter the result by the list of groups that the current user has access to.
-    list($insql, $inparams) = $DB->get_in_or_equal(array_keys($groups), SQL_PARAMS_NAMED);
-    $params += $inparams;
 
-    $table->set_sql('o.*, g.name as groupname',
-      "{quiz_overrides} o
-      JOIN {groups} g ON o.groupid = g.id",
-      "o.quiz = :quizid AND g.id $insql",
-      $params);
+    if (!empty($groups)) {
+        
+        // To filter the result by the list of groups that the current user has access to.
+        list($insql, $inparams) = $DB->get_in_or_equal(array_keys($groups), SQL_PARAMS_NAMED);
+        $params += $inparams;
+
+        $table->set_sql('o.*, g.name as groupname',
+          "{quiz_overrides} o
+          JOIN {groups} g ON o.groupid = g.id",
+          "o.quiz = :quizid AND g.id $insql",
+          $params);
+
+    } else {
+
+        $table->set_sql('o.*, g.name as groupname',
+          "{quiz_overrides} o
+          JOIN {groups} g ON o.groupid = g.id",
+          "1 = 0",
+          $params);
+
+    }
+
 } else {
     // Get additional user identity fields (showuseridentity user policy).
     $userfieldsapi = \core_user\fields::for_identity($context)->with_name()->with_userpic();
     $useridentityfields = $userfieldsapi->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]);
 
-    $fields = '';
-    if (count($useridentityfields) > 0) {
-        $fields = 'userid, ' . implode(', ', $useridentityfields);
-    } else {
+    // $fields = '';
+    // if (count($useridentityfields) > 0) {
+    //     $fields = 'userid, ' . implode(', ', $useridentityfields);
+    // } else {
         $fields = 'userid';
-    }
+    // }
 
     // Get necessary fields for query.
     $userfieldssql = $userfieldsapi->get_sql('u', true, '', $fields, false);
@@ -211,15 +231,19 @@ $downloadurl = moodle_url::make_pluginfile_url(
     true,
 );
 
-echo html_writer::empty_tag('br');
-$button = html_writer::link($downloadurl, 'Download overrides', ['class' => 'btn btn-secondary']);
+$button = html_writer::link($downloadurl, get_string('overridedownload', 'quiz'), ['class' => 'btn btn-secondary']);
 
-if (!$table->isempty) {
+if ($canedit && !$table->isempty) {
+    echo html_writer::empty_tag('br');
     echo $button;
 }
 
 if ($table->hasinactive) {
     echo $OUTPUT->notification(get_string('inactiveoverridehelp', 'quiz'), 'info', false);
+}
+
+if ($warningmessage) {
+    echo $OUTPUT->notification($warningmessage, 'error', false);
 }
 
 echo html_writer::end_tag('div');

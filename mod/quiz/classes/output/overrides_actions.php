@@ -98,6 +98,9 @@ class overrides_actions implements renderable, templatable {
         $label = get_string('importoverrides', 'quiz', $this->mode);
 
         $addoverridebutton = new \single_button($addoverrideurl, $label, 'get', \single_button::BUTTON_PRIMARY);
+        if (!$this->addenabled) {
+            $addoverridebutton->disabled = true;
+        }
 
         return $addoverridebutton;
     }
