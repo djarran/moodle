@@ -1724,6 +1724,252 @@ function quiz_extend_settings_navigation(settings_navigation $settings, navigati
 }
 
 /**
+ * Provide users with CSV file of quiz overrides.
+ *
+ * @package  mod_quiz
+ * @category files
+ * @param stdClass $course Course object
+ * @param stdClass $cm Course module object
+ * @param stdClass $context Context object
+ * @param string $filearea File area
+ * @param array $args Extra arguments
+ * @param bool $forcedownload Whether or not to force download
+ * @param array $options Additional options affecting the file serving
+ * @return bool False if file not found, does not return if found, just sends the file.
+ */
+function mod_quiz_pluginfile(stdClass $course, stdClass $cm, stdClass $context, string $filearea,
+  array $args, bool $forcedownload, array $options = []) {
+
+    global $CFG, $DB, $USER;
+
+    if ($context->contextlevel != CONTEXT_MODULE) {
+        return false;
+    }
+
+    require_login($course, false, $cm);
+
+    $mode = (string)array_shift($args);
+    $template = optional_param('template', 0, PARAM_BOOL);
+    if (!$quiz = $DB->get_record('quiz', ['id' => $cm->instance])) {
+        return false;
+    }
+
+    if ($filearea !== 'overrides') {
+        return false;
+    }
+
+    $contextsystem = context_system::instance();
+    require_capability('mod/quiz:manageoverrides', $contextsystem);
+
+    // Perform necessary checks to ensure correct data is exported for user's visibility.
+    $quizgroupmode = groups_get_activity_groupmode($cm);
+    $showallgroups = ($quizgroupmode == NOGROUPS) || has_capability('moodle/site:accessallgroups', $context);
+    $groups = $showallgroups ? groups_get_all_groups($cm->course) : groups_get_activity_allowed_groups($cm);
+
+    $sql = '';
+    $sqlparams = [];
+
+    $overridefieldssql = 'o.timeopen, o.timeclose, o.timelimit, o.attempts, o.password';
+    $overrides = [];
+    $overridesset = false;
+
+    if ($mode == 'user') {
+        if ($template) {
+            $users = get_users_by_capability($context, 'mod/quiz:attempt',
+              'u.id as userid, u.idnumber as useridnumber, u.username', 'u.id ASC');
+
+            // Retrieve quiz overrides.
+            $columns = "id, userid, quiz, timeopen, timeclose, timelimit, attempts, password, '' as generate";
+            $condition = 'quiz = :quizid';
+            $params = ['quizid' => $quiz->id];
+            $quizoverrides = $DB->get_records_select('quiz_overrides', $condition, $params, '', $columns);
+            $overrideoptions = ['timeopen', 'timeclose', 'timelimit', 'attempts', 'password', 'generate'];
+
+            // Ensure exported file contains commas for each option.
+            foreach ($users as $user) {
+                foreach ($overrideoptions as $option) {
+                    $user->{$option} = null;
+                }
+            }
+
+            if (count($quizoverrides) > 0) {
+                // Prepare to merge overrides into users.
+                foreach ($quizoverrides as $override) {
+                    if (isset($users[$override->userid])) {
+                        // Merge only the specified override fields to the group object.
+                        foreach ($overrideoptions as $option) {
+                            if ($option == 'timeopen' || $option == 'timeclose') {
+                                if (empty($override->{$option})) {
+                                    $users[$override->userid]->{$option} = null;
+                                    continue;
+                                }
+
+                                $timezone = core_date::get_user_timezone($USER);
+                                $datetime = new \DateTime();
+                                $datetime->setTimestamp(intval($override->{$option}));
+                                $datetime->setTimezone(new DateTimeZone($timezone));
+                                $users[$override->userid]->{$option} = $datetime->format('Y-m-d H:i P');
+                            } else {
+                                $users[$override->userid]->{$option} = isset($override->{$option}) ? $override->{$option} : null;
+                            }
+                        }
+                    }
+                }
+            }
+
+            $overrides = $users;
+
+            // Add example data for user.
+            $exampledata = (object) [
+                'userid' => 0,
+                'useridnumber' => 0,
+                'username' => 'examplename',
+                'timeopen' => '2024-05-28 14:57 +10:00',
+                'timeclose' => '2024-05-31 15:33 +10:00',
+                'timelimit' => 1200,
+                'attempts' => 6,
+                'password' => 'testpassword',
+                'generate' => '',
+            ];
+
+            array_unshift($overrides, $exampledata);
+            $overridesset = true;
+        } else {
+            list($sort, $sqlparams) = users_order_by_sql('u', null, $context, []);
+
+            $sqlparams['quizid'] = $quiz->id;
+
+            if ($showallgroups) {
+                $groupsjoin = '';
+                $groupswhere = '';
+            } else if ($groups) {
+                list($insql, $inparams) = $DB->get_in_or_equal(array_keys($groups), SQL_PARAMS_NAMED);
+                $groupsjoin = 'JOIN {groups_members} gm ON u.id = gm.userid';
+                $groupswhere = ' AND gm.groupid ' . $insql;
+                $sqlparams += $inparams;
+            } else {
+                // User cannot see any data.
+                $groupsjoin = '';
+                $groupswhere = ' AND 1 = 2';
+            }
+
+            $sql = "SELECT u.id as userid, u.idnumber as useridnumber, u.username, {$overridefieldssql}
+                FROM {quiz_overrides} o
+                JOIN {user} u ON o.userid = u.id $groupsjoin
+                WHERE o.quiz = :quizid AND o.userid IS NOT NULL$groupswhere";
+        }
+    } else {
+        if ($template) {
+            $groups = groups_get_all_groups($cm->course, 0, 0, 'g.id as groupid, g.idnumber as groupidnumber, g.name as groupname');
+
+            // Retrieve quiz overrides.
+            $columns = "groupid, quiz, timeopen, timeclose, timelimit, attempts, password, '' as generate";
+            $condition = 'quiz = :quizid';
+            $params = ['quizid' => $quiz->id];
+            $quizoverrides = $DB->get_records_select('quiz_overrides', $condition, $params, '', $columns);
+            $overrideoptions = ['timeopen', 'timeclose', 'timelimit', 'attempts', 'password', 'generate'];
+
+            // Ensure exported file contains commas for each option.
+            foreach ($groups as $group) {
+                foreach ($overrideoptions as $option) {
+                    $group->{$option} = null;
+                }
+            }
+
+            if (count($quizoverrides) > 0) {
+                // Prepare to merge overrides into users.
+                foreach ($quizoverrides as $override) {
+                    if (isset($groups[$override->groupid])) {
+
+                        // Merge only the specified override fields to the group object.
+                        foreach ($overrideoptions as $option) {
+                            if ($option == 'timeopen' || $option == 'timeclose') {
+                                if (empty($override->{$option})) {
+                                    $groups[$override->groupid]->{$option} = null;
+                                    continue;
+                                }
+
+                                // Use user's timezone.
+                                $timezone = core_date::get_user_timezone($USER);
+                                $datetime = new \DateTime();
+                                $datetime->setTimestamp(intval($override->{$option}));
+                                $datetime->setTimezone(new DateTimeZone($timezone));
+                                $groups[$override->groupid]->{$option} = $datetime->format('Y-m-d H:i P');
+                            } else {
+                                $groups[$override->groupid]->{$option} = isset($override->{$option}) ? $override->{$option} : null;
+                            }
+                        }
+                    }
+                }
+            }
+
+            $overrides = $groups;
+
+            // Add example data for user.
+            $exampledata = (object) [
+                'groupid' => 0,
+                'groupidnumber' => 0,
+                'groupname' => 'examplename',
+                'timeopen' => '2024-05-28 14:57 +10:00',
+                'timeclose' => '2024-05-31 15:33 +10:00',
+                'timelimit' => 1200,
+                'attempts' => 6,
+                'password' => 'testpassword',
+                'generate' => '',
+            ];
+
+            array_unshift($overrides, $exampledata);
+            $overridesset = true;
+        } else {
+
+            // To filter the result by the list of groups that the current user has access to.
+            list($insql, $inparams) = $DB->get_in_or_equal(array_keys($groups), SQL_PARAMS_NAMED);
+            $sqlparams['quizid'] = $quiz->id;
+            $sqlparams += $inparams;
+
+            $sql = "SELECT g.id as groupid, g.idnumber AS groupidnumber, g.name AS groupname, {$overridefieldssql}
+                    FROM {quiz_overrides} o
+                    JOIN {groups} g ON o.groupid = g.id
+                    WHERE o.quiz = :quizid AND o.groupid IS NOT NULL AND g.id $insql";
+        }
+    }
+
+    if (!$overridesset) {
+        $overrides = $DB->get_records_sql($sql, $sqlparams);
+        foreach ($overrides as $override) {
+            foreach (['timeopen', 'timeclose'] as $option) {
+                if (empty($override->{$option})) {
+                    $override->{$option} = null;
+                } else {
+                    $timezone = core_date::get_user_timezone($USER);
+                    $datetime = new \DateTime();
+                    $datetime->setTimestamp(intval($override->{$option}));
+                    $datetime->setTimezone(new \DateTimeZone($timezone));
+                    $override->{$option} = $datetime->format('Y-m-d H:i P');
+                }
+            }
+        }
+    }
+
+    if (!$overrides) {
+        return false;
+    }
+
+    $headers = array_keys((array) reset($overrides));
+
+    $rows = [];
+    foreach ($overrides as $override) {
+        $rows[] = (array) $override;
+    }
+
+    $additional = $template ? '-template' : '';
+    $filename = clean_filename("{$course->shortname}-{$mode}-overrides{$additional}");
+    \core\dataformat::download_data($filename, 'csv', $headers, $rows);
+
+    exit;
+}
+
+/**
  * Serves the quiz files.
  *
  * @package  mod_quiz

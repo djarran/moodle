@@ -244,6 +244,8 @@ $string['countdown'] = 'Countdown';
 $string['countdownfinished'] = 'The quiz is closing, you should submit your answers now.';
 $string['countdowntenminutes'] = 'The quiz will be closing in ten minutes.';
 $string['coursetestmanager'] = 'Course Test Manager format';
+$string['csvdelimiter'] = 'CSV separator';
+$string['csvdelimiter_help'] = 'The character separating the series of data in each record.';
 $string['createcategoryandaddrandomquestion'] = 'Create category and add random question';
 $string['createfirst'] = 'You must create some short-answer questions first.';
 $string['createmultiple'] = 'Add several random questions to quiz';
@@ -344,12 +346,28 @@ $string['emailoverduesmall'] = 'You did not submit your attempt at {$a->quizname
 $string['emailoverduesubject'] = 'Attempt now overdue: {$a->quizname}';
 $string['empty'] = 'Empty';
 $string['enabled'] = 'Enabled';
+$string['encoding'] = 'Encoding';
 $string['endtest'] = 'Finish attempt ...';
 $string['erroraccessingreport'] = 'You cannot access this report';
+$string['errorattempts'] = 'Invalid attempts value.';
+$string['errordbinsert'] = 'Error occurred during database insert: {$a}';
+$string['errorgenerate'] = 'Generate Password must be a valid boolean value.';
+$string['errorgroupnotexist'] = 'Group with ID {$a} does not exist.';
+$string['erroridempty'] = 'ID cannot be empty.';
 $string['errorinquestion'] = 'Error in question';
+$string['errorinvaliddatetime'] = 'Invalid datetime format used in {$a} column.';
 $string['errormissingquestion'] = 'Error: The system is missing the question with id {$a}';
+$string['errornoimport'] = 'Rows were processed, but no overrides were found to import.';
 $string['errornotnumbers'] = 'Error - answers must be numeric';
+$string['erroropenclose'] = 'Quiz opens time must be before quiz closes time.';
+$string['errorpassword'] = 'The password must not start or end with whitespace.';
+$string['errorprocessing'] = 'The CSV file contains errors that must be resolved before importing. Please fix all rows with errors and reupload the CSV.';
+$string['errorstructure'] = 'File cannot be processed as it does not contain the correct header structure for {$a->mode} overrides: <br><br>
+  Expected: {$a->expected}<br>
+  Actual: {$a->actual}';
+$string['errortimelimit'] = 'Invalid time limit value "{$a}". It must be a non-negative integer or "Unlimited".';
 $string['errorunexpectedevent'] = 'Unexpected event code {$a->event} found for question {$a->questionid} in attempt {$a->attemptid}.';
+$string['errorusernotexist'] = 'User with ID {$a} does not exist.';
 $string['essay'] = 'Essay';
 $string['essayquestions'] = 'Questions';
 $string['eventattemptautosaved'] = 'Quiz attempt auto-saved';
@@ -395,6 +413,7 @@ $string['eventslotrequirepreviousupdated'] = 'Slot require previous updated';
 $string['everynquestions'] = 'Every {$a} questions';
 $string['everyquestion'] = 'Every question';
 $string['everythingon'] = 'Everything on';
+$string['templatefile_help'] = 'This file can be used as a template to add overrides for all {$a}. It contains an example override that shows the correct format to be used. When finished adding your overrides, remove the example row, save the file as a CSV, then upload it.';
 $string['existingcategory'] = 'Existing category';
 $string['exportcategory'] = 'export category';
 $string['exporterror'] = 'An error occurred during export processing';
@@ -483,6 +502,7 @@ If your file contains non-ascii characters then it must use UTF-8 encoding. Be p
 Import and Export formats are a pluggable resource. Other optional formats may be available in the Modules and Plugins database.';
 $string['import_link'] = 'question/import';
 $string['importcategory'] = 'import category';
+$string['importconfirm'] = 'Are you sure you would like to import?';
 $string['importerror'] = 'An error occurred during import processing';
 $string['importfilearea'] = 'Import from file already in course files...';
 $string['importfileupload'] = 'Import from file upload...';
@@ -490,7 +510,11 @@ $string['importfromthisfile'] = 'Import from this file';
 $string['importingquestions'] = 'Importing {$a} questions from file';
 $string['importmaxerror'] = 'There is an error in the question. There are too many answers.';
 $string['importmax10error'] = 'There is an error in the question. You may not have more than ten answers';
+$string['importoverrides'] = 'Import {$a} overrides';
+$string['importpreview'] = 'Import overrides preview';
 $string['importquestions'] = 'Import questions from file';
+$string['importsuccess'] = 'Overrides successfully imported.';
+$string['importvalidate'] = 'Validate';
 $string['inactiveoverridehelp'] = '* This override is inactive because the user\'s access to the activity is restricted. This can be due to group or role assignments, other access restrictions, or the activity being hidden.';
 $string['incorrect'] = 'Incorrect';
 $string['indicator:cognitivedepth'] = 'Quiz cognitive';
@@ -667,10 +691,30 @@ $string['overduehandlinggraceperiod'] = 'There is a grace period when open attem
 $string['overduehandlingautoabandon'] = 'Attempts must be submitted before time expires, or they are not counted';
 $string['overduemustbesubmittedby'] = 'This attempt is now overdue. It should already have been submitted. If you would like this quiz to be graded, you must submit it by {$a}. If you do not submit it by then, no marks from this attempt will be counted.';
 $string['override'] = 'Override';
+$string['overridedownload'] = 'Download overrides';
 $string['overridecannotchange'] = 'The user or group cannot be changed after an override is created.';
 $string['overridecannotsetbothgroupanduser'] = 'Both group and user cannot be set at the same time.';
 $string['overridedeletegroupsure'] = 'Are you sure you want to delete the override for group {$a}?';
 $string['overridedeleteusersure'] = 'Are you sure you want to delete the override for user {$a}?';
+$string['overridefile'] = 'Override file';
+$string['overridefile_help'] = 'The uploaded file must have the the following headers in this order with the following formats. Each row must contain a valid {$a}id:
+
+1. **{$a}id**: the internal ID for the {$a}, an integer value.
+2. **{$a}idnumber**: the assigned ID for the {$a}, any value.
+3. **{$a}name**: the {$a}\'s name, any value.
+4. **timeopen**: YYYY-MM-DD HH:MM ±HH:MM.
+5. **timeclose**: YYYY-MM-DD HH:MM ±HH:MM.
+6. **timelimit**: null for no limit, positive integer otherwise.
+7. **attempts**: null for unlimited attempts, positive integer otherwise.
+8. **generate**: 1 to generate password, 0 (or null) to not generate password.
+
+It has the following logic:
+
+* If no {$a} override exists and you provide an override, a new override will be created.
+* If no {$a} override exists and you don\'t provide an override, no override will be created.
+* If a {$a} override exists with a timeopen override and you provide no value for timeopen but add a value for attempts, that override will be updated to now only contain an attempt override.
+* If a {$a} override exists and you provide no value for a setting, it will be deleted.
+';
 $string['overridegroup'] = 'Override group';
 $string['overridegroupeventname'] = '{$a->quiz} - {$a->group}';
 $string['overrideinvalidattempts'] = 'Attempts value must be greater than zero.';
@@ -1044,8 +1088,10 @@ $string['subplugintype_quiz_plural'] = 'Reports';
 $string['subplugintype_quizaccess'] = 'Access rule';
 $string['subplugintype_quizaccess_plural'] = 'Access rules';
 $string['substitutedby'] = 'will be substituted by';
+$string['successprocessing'] = 'CSV parsed correctly and all rows passed validation checks. Please verify that each row has been processed correctly.';
 $string['summaryofattempt'] = 'Summary of attempt';
 $string['summaryofattempts'] = 'Your attempts';
+$string['templatefile'] = 'Template file';
 $string['temporaryblocked'] = 'You are temporarily not allowed to re-attempt the quiz.<br /> You will be able to take another attempt on:';
 $string['theattempt'] = 'The attempt';
 $string['theattempt_help'] = 'Whether the student can review the attempt at all.';
@@ -1106,6 +1152,14 @@ $string['questionversion'] = 'v{$a}';
 $string['questionversionlatest'] = 'v{$a} (latest)';
 $string['alwayslatest'] = 'Always latest';
 $string['gobacktoquiz'] = 'Go back';
+
+// Deprecated since Moodle 4.0.
+$string['completionpass'] = 'Require passing grade';
+$string['completionpassdesc'] = 'Student must achieve a passing grade to complete this activity';
+$string['completionpass_help'] = 'If enabled, this activity is considered complete when the student receives a pass grade (as specified in the Grade section of the quiz settings) or higher.';
+$string['completiondetail:passgrade'] = 'Receive a pass grade';
+$string['gradetopassnotset'] = 'This quiz does not yet have a grade to pass set. It may be set in the Grade section of the quiz settings.';
+$string['basicideasofquiz'] = 'The basic ideas of quiz-making';
 
 // Deprecated since Moodle 4.3.
 $string['completionminattemptsgroup'] = 'Require attempts';
