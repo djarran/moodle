@@ -71,4 +71,20 @@ class behat_mod_assign extends behat_base {
             $criteriacheck++;
         }
     }
+
+    /**
+     * Enable edit mode.
+     *
+     * @When /^I enable the edit mode$/
+     */
+    public function i_enable_the_edit_mode(): void {
+        $page = $this->getSession()->getPage();
+        $switch = $page->find('css', '.editmode-switch-form');
+
+        if (null === $switch) {
+            throw new \Exception('Edit mode switch form not found');
+        }
+
+        $switch->click();
+    }
 }
