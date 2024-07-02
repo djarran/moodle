@@ -268,8 +268,6 @@ class locallib_test extends \advanced_testcase {
         $output = $assign->get_renderer()->render($gradingtable);
         $this->assertStringContainsString(get_string('submissionstatus_', 'assign'), $output);
         $this->assertStringContainsString(get_string('userextensiondate', 'assign', userdate($extendedtime)), $output);
-        $event = $DB->record_exists('event', ['userid' => $student->id, 'eventtype' => ASSIGN_EVENT_TYPE_EXTENSION]);
-        $this->assertTrue($event);
 
         // Simulate a submission.
         $this->setUser($student);
@@ -707,6 +705,47 @@ class locallib_test extends \advanced_testcase {
 
         $plugin = $assign->get_submission_plugin_by_type('file');
         $this->assertEquals('12', $plugin->get_config('maxfilesubmissions'));
+    }
+
+    public function test_save_user_extension_calendar_event(): void {
+        global $DB, $CFG;
+        require_once($CFG->dirroot.'/calendar/lib.php'); 
+
+        $this->resetAfterTest();
+
+        $course = $this->getDataGenerator()->create_course();
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'teacher');
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+
+        $this->setUser($teacher);
+
+        $now = time();
+        $tomorrow = $now + DAYSECS;
+        $yesterday = $now - DAYSECS;
+
+        $assign = $this->create_instance($course, [
+            'duedate' => $yesterday,
+            'cutoffdate' => $yesterday,
+        ]);
+
+        $sink = $this->redirectEvents();
+
+        // Events for extension granted and calendar extension due date are created.
+        $assign->testable_save_user_extension($student->id, $tomorrow);
+
+        $events = $sink->get_events();
+
+        $event = end($events);
+        $this->assertInstanceOf('\core\event\calendar_event_created', $event);
+
+        // Check that calendar event is created.
+        $event = $DB->record_exists('event', ['userid' => $student->id, 'eventtype' => ASSIGN_EVENT_TYPE_EXTENSION]);
+        $this->assertTrue($event);
+
+        // Check that calendar event is deleted if extension is revoked.
+        $assign->testable_save_user_extension($student->id, '');
+        $event = $DB->record_exists('event', ['userid' => $student->id, 'eventtype' => ASSIGN_EVENT_TYPE_EXTENSION]);
+        $this->assertFalse($event);
     }
 
     public function test_update_calendar(): void {
