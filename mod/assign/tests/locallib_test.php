@@ -707,9 +707,14 @@ class locallib_test extends \advanced_testcase {
         $this->assertEquals('12', $plugin->get_config('maxfilesubmissions'));
     }
 
+    /**
+     * Test calendar event creation for extension due date.
+     *
+     * @covers \assign::save_user_extension
+     */
     public function test_save_user_extension_calendar_event(): void {
         global $DB, $CFG;
-        require_once($CFG->dirroot.'/calendar/lib.php'); 
+        require_once($CFG->dirroot.'/calendar/lib.php');
 
         $this->resetAfterTest();
 
