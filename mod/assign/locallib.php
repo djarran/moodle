@@ -6904,7 +6904,8 @@ class assign {
      * @return boolean
      */
     public function save_user_extension($userid, $extensionduedate) {
-        global $DB;
+        global $DB, $CFG;
+        require_once($CFG->dirroot.'/calendar/lib.php');
 
         // Need submit permission to submit an assignment.
         require_capability('mod/assign:grantextension', $this->context);
@@ -6947,7 +6948,7 @@ class assign {
                 $event->name          = get_string('calendarextension', 'assign', $instance->name);
                 $event->description   = format_module_intro('assign', $instance, $cm->id);
                 $event->format        = FORMAT_HTML;
-                $event->courseid      = $this->get_course()->id;
+                $event->courseid      = 0;
                 $event->groupid       = 0; // Set groupid to 0 since this is a user extension.
                 $event->userid        = $userid;
                 $event->modulename    = 'assign';
