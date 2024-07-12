@@ -901,7 +901,18 @@ class stateactions {
             $this->validate_sections($course, $ids, __FUNCTION__);
         }
         $format = course_get_format($course->id);
-        $format->add_section_preference_ids('indexcollapsed', $ids);
+
+
+        $coursedefaultcollapsedindex = true;
+
+        if ($coursedefaultcollapsedindex) {
+            $format->remove_section_preference_ids('indexexpanded', $ids);
+        } else {
+            $format->add_section_preference_ids('indexcollapsed', $ids);
+        }
+
+        // $format->add_section_preference_ids('indexcollapsed', $ids);
+        // $format->remove_section_preference_ids('indexexpanded', $ids);
     }
 
     /**
@@ -924,7 +935,14 @@ class stateactions {
             $this->validate_sections($course, $ids, __FUNCTION__);
         }
         $format = course_get_format($course->id);
-        $format->remove_section_preference_ids('indexcollapsed', $ids);
+
+        $coursedefaultcollapsedindex = true;
+
+        if ($coursedefaultcollapsedindex) {
+            $format->add_section_preference_ids('indexexpanded', $ids);
+        } else {
+            $format->remove_section_preference_ids('indexcollapsed', $ids);
+        }
     }
 
     /**

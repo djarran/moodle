@@ -61,16 +61,29 @@ class section implements renderable {
         $section = $this->section;
         $modinfo = $format->get_modinfo();
 
-        $indexcollapsed = false;
-        $contentcollapsed = false;
+        $coursedefaultcollapsedindex = true;
+
+        if ($coursedefaultcollapsedindex) {
+            $indexcollapsed = true;
+            $contentcollapsed = false;
+        } else {
+            $indexcollapsed = false;
+            $contentcollapsed = false;
+        }
+
         $preferences = $format->get_sections_preferences();
         if (isset($preferences[$section->id])) {
+
             $sectionpreferences = $preferences[$section->id];
+
             if (!empty($sectionpreferences->contentcollapsed)) {
                 $contentcollapsed = true;
-            }
+            } 
+
             if (!empty($sectionpreferences->indexcollapsed)) {
                 $indexcollapsed = true;
+            } elseif (!empty($sectionpreferences->indexexpanded)) {
+                $indexcollapsed = false;
             }
         }
 
