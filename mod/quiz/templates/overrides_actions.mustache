@@ -27,10 +27,19 @@
     Context variables required for this template:
     * overridesnav - must alwasy be present.
     * addoverridebutton - should only be present if the user has permission to add a new override.
+    * addimportbutton - should only be present if the user has permission to add and edit a overrides.
 
     Example context (json):
     {
         "overridesnav": {
+            "id": "url_select_test",
+            "action": "https://example.com/post",
+            "formid": "url_select_form",
+            "sesskey": "sesskey",
+            "classes": "urlselect",
+            "label": "",
+            "helpicon": false,
+            "showbutton": null,
             "options": [{
                     "name": "User overrides",
                     "value": "/mod/quiz/overrides.php?cmid=71&mode=user"
@@ -39,13 +48,15 @@
                     "name": "Group overrides",
                     "value": "/mod/quiz/overrides.php?cmid=71&mode=group"
                 }
-            ]
+            ],
+            "disabled": false,
+            "title": null
         },
         "addoverridebutton": {
             "id": "single_button1234",
             "method": "get",
             "url": "http://localhost/moodle/mod/quiz/overrideedit.php",
-            "lablel": "Add user override",
+            "label": "Add user override",
             "classes": "singlebutton",
             "disabled": false,
             "params": [
@@ -56,6 +67,24 @@
                 {
                     "name": "action",
                     "value": "adduser"
+                }
+            ]
+        },
+        "addimportbutton": {
+            "id": "single_button1235",
+            "method": "get",
+            "url": "http://localhost/moodle/mod/quiz/overrideimport.php",
+            "label": "Import user overrides",
+            "classes": "singlebutton",
+            "disabled": false,
+            "params": [
+                {
+                    "name": "cmid",
+                    "value": "73"
+                },
+                {
+                    "name": "mode",
+                    "value": "user"
                 }
             ]
         }
@@ -73,5 +102,10 @@
                 {{>core/single_button}}
             </div>
         {{/addoverridebutton}}
+        {{#addimportbutton}}
+            <div class="navitem">
+                {{>core/single_button}}
+            </div>
+        {{/addimportbutton}}
     </div>
 </div>
