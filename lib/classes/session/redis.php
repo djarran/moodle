@@ -102,8 +102,8 @@ class redis extends handler {
     /** @var int $timeout How long sessions live before expiring. */
     protected $timeout;
 
-    /** @var int The number of seconds to wait for a connection or response from the Redis server. */
-    const CONNECTION_TIMEOUT = 10;
+    /** @var int $connectiontimeout The number of seconds to wait for a connection or response from the Redis server. */
+    protected int $connectiontimeout = 3;
 
     /**
      * Create new instance of handler.
@@ -195,6 +195,10 @@ class redis extends handler {
         if (isset($CFG->session_redis_compressor)) {
             $this->compressor = $CFG->session_redis_compressor;
         }
+
+        if (isset($CFG->session_redis_connection_timeout)) {
+            $this->connectiontimeout = (int)$CFG->session_redis_connection_timeout;
+        }
     }
 
     /**
@@ -258,10 +262,10 @@ class redis extends handler {
                 $connection = $this->connection->connect(
                     $this->host,
                     $this->port,
-                    self::CONNECTION_TIMEOUT, // Timeout.
+                    $this->connectiontimeout, // Timeout.
                     null,
                     $delay, // Retry interval.
-                    self::CONNECTION_TIMEOUT, // Read timeout.
+                    $this->connectiontimeout, // Read timeout.
                     $opts,
                 );
                 if (!$connection) {
