@@ -349,8 +349,8 @@ class session_redis_test extends \advanced_testcase {
         if ($this->encrypted) {
             $host = "tls://$host";
         }
-        $expected = "Failed to connect (try 5 out of 5) to redis at $host:111111";
-        $this->assertDebuggingCalledCount(5);
+        $expected = "Failed to connect (try 3 out of 3) to redis at $host:111111";
+        $this->assertDebuggingCalledCount(3);
         $this->assertStringContainsString($expected, $actual);
     }
 

@@ -102,6 +102,9 @@ class redis extends handler {
     /** @var int $timeout How long sessions live before expiring. */
     protected $timeout;
 
+    /** @var int Maximum number of retries for cache store operations. */
+    protected int $maxretries = 3;
+
     /** @var int $connectiontimeout The number of seconds to wait for a connection or response from the Redis server. */
     protected int $connectiontimeout = 3;
 
@@ -199,6 +202,10 @@ class redis extends handler {
         if (isset($CFG->session_redis_connection_timeout)) {
             $this->connectiontimeout = (int)$CFG->session_redis_connection_timeout;
         }
+
+        if (isset($CFG->session_redis_max_retries)) {
+            $this->maxretries = (int)$CFG->session_redis_max_retries;
+        }
     }
 
     /**
@@ -246,7 +253,7 @@ class redis extends handler {
 
         // MDL-59866: Add retries for connections (up to 5 times) to make sure it goes through.
         $counter = 1;
-        $maxnumberofretries = 5;
+        $maxnumberofretries = $this->maxretries;
         $opts = [];
         if ($this->sslopts) {
             // Do not set $opts['stream'] = [], breaks connect().
