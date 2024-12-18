@@ -64,7 +64,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
     const TTL_EXPIRE_BATCH = 10000;
 
     /** @var int The number of seconds to wait for a connection or response from the Redis server. */
-    const CONNECTION_TIMEOUT = 10;
+    const CONNECTION_TIMEOUT = 3;
 
     /**
      * Name of this store.
@@ -114,6 +114,14 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
      * @var int
      */
     protected $compressor = self::COMPRESSOR_NONE;
+
+
+    /**
+     * The number of seconds to wait for a connection or response from the Redis server.
+     *
+     * @var int
+     */
+    protected $connectiontimeout = self::CONNECTION_TIMEOUT;
 
     /**
      * Bytes read or written by last call to set()/get() or set_many()/get_many().
@@ -192,6 +200,9 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         if (array_key_exists('compressor', $configuration)) {
             $this->compressor = (int)$configuration['compressor'];
         }
+        if (array_key_exists('connectiontimeout', $configuration)) {
+            $this->connectiontimeout = (int)$configuration['connectiontimeout'];
+        }
         if (array_key_exists('lockwait', $configuration)) {
             $this->lockwait = (int)$configuration['lockwait'];
         }
@@ -247,10 +258,10 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             $connection = $redis->connect(
                 $server,
                 $port,
-                self::CONNECTION_TIMEOUT, // Timeout.
+                $this->connectiontimeout, // Timeout.
                 null,
                 100, // Retry interval.
-                self::CONNECTION_TIMEOUT, // Read timeout.
+                $this->connectiontimeout, // Read timeout.
                 $opts,
             );
             if ($connection) {
@@ -797,6 +808,7 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
             'password' => $data->password,
             'serializer' => $data->serializer,
             'compressor' => $data->compressor,
+            'connectiontimeout' => $data->connectiontimeout,
             'encryption' => $data->encryption,
             'cafile' => $data->cafile,
         );
@@ -819,6 +831,9 @@ class cachestore_redis extends cache_store implements cache_is_key_aware, cache_
         }
         if (!empty($config['compressor'])) {
             $data['compressor'] = $config['compressor'];
+        }
+        if (!empty($config['connectiontimeout'])) {
+            $data['connectiontimeout'] = $config['connectiontimeout'];
         }
         if (!empty($config['encryption'])) {
             $data['encryption'] = $config['encryption'];

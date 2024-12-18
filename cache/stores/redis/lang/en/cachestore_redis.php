@@ -27,6 +27,8 @@ defined('MOODLE_INTERNAL') || die();
 $string['compressor_none'] = 'No compression.';
 $string['compressor_php_gzip'] = 'Use gzip compression.';
 $string['compressor_php_zstd'] = 'Use Zstandard compression.';
+$string['connectiontimeout'] = 'Connection timeout';
+$string['connectiontimeout_help'] = 'This sets the timeout when attempting to connect to the Redis server.';
 $string['encrypt_connection'] = 'Use TLS encryption.';
 $string['encrypt_connection_help'] = 'Use TLS to connect to Redis. Do not use \'tls://\' in the hostname for Redis, use this option instead.';
 $string['ca_file'] = 'CA file path';
