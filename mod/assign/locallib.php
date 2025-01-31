@@ -5315,6 +5315,11 @@ class assign {
 
         $gradingstatus = $this->get_grading_status($user->id);
         $usergroups = $this->get_all_groups($user->id);
+
+        // Reload submission object as it may not have existed prior to call to get_grading_status.
+        if (!$submission) {
+            $submission = $this->get_user_submission($user->id, false);
+        }
         $submissionstatus = new assign_submission_status($instance->allowsubmissionsfromdate,
                                                           $instance->alwaysshowdescription,
                                                           $submission,
