@@ -63,7 +63,7 @@ class asynchronous_copy_task extends adhoc_task {
         } catch (\backup_dbops_exception $e) {
             mtrace('Course copy: Can not load backup controller for copy, marking job as failed');
             delete_course($restorerecord->itemid, false); // Clean up partially created destination course.
-            return; // Return early as we can't continue.
+            throw $e; // Rethrow exception, can't continue rest of execution.
         }
 
         $rc = \restore_controller::load_controller($restoreid);  // Get the restore controller by restore id.
