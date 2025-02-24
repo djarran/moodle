@@ -95,6 +95,17 @@ class task_log extends base {
 
         $tablealias = $this->get_table_alias('task_log');
 
+        // Task Id column.
+        $columns[] = (new column(
+            'id',
+            new lang_string('taskid', 'tool_task'),
+            $this->get_entity_name()
+        ))
+            ->add_joins($this->get_joins())
+            ->set_type(column::TYPE_INTEGER)
+            ->add_field("{$tablealias}.id")
+            ->set_is_sortable(true);
+
         // Name column.
         $columns[] = (new column(
             'name',
@@ -236,6 +247,17 @@ class task_log extends base {
                 return get_string('success');
             });
 
+        // Custom data column.
+        $columns[] = (new column(
+            'custom_data',
+            new lang_string('taskcustomdata', 'tool_task'),
+            $this->get_entity_name()
+        ))
+            ->add_joins($this->get_joins())
+            ->set_type(column::TYPE_TEXT)
+            ->add_field("{$tablealias}.custom_data")
+            ->set_is_sortable(true);
+
         return $columns;
     }
 
@@ -246,6 +268,16 @@ class task_log extends base {
      */
     protected function get_available_filters(): array {
         $tablealias = $this->get_table_alias('task_log');
+
+        // Id filter (Filter by classname).
+        $filters[] = (new filter(
+            number::class,
+            'id',
+            new lang_string('taskid', 'tool_task'),
+            $this->get_entity_name(),
+            "{$tablealias}.id"
+        ))
+            ->add_joins($this->get_joins());
 
         // Name filter (Filter by classname).
         $filters[] = (new filter(
@@ -369,6 +401,16 @@ class task_log extends base {
                 self::SUCCESS => get_string('success'),
                 self::FAILED => get_string('task_result:failed', 'admin'),
             ]);
+
+        // Custom data filter.
+        $filters[] = (new filter(
+            text::class,
+            'custom_data',
+            new lang_string('taskcustomdata', 'tool_task'),
+            $this->get_entity_name(),
+            "{$tablealias}.custom_data"
+        ))
+            ->add_joins($this->get_joins());
 
         return $filters;
     }

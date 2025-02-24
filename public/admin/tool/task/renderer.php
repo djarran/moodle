@@ -25,6 +25,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+use core\check\result;
 use core\task\scheduled_task;
 
 
@@ -35,6 +36,39 @@ use core\task\scheduled_task;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class tool_task_renderer extends plugin_renderer_base {
+
+    /**
+     * This function will render a next run field.
+     *
+     * @param integer $nextrun
+     * @return string HTML to output.
+     */
+    private function generate_next_run_field($nextrun) {
+        $delta = time() - $nextrun;
+        $nextrun = userdate($nextrun);
+        $timestring = format_time($delta);
+        $status = \tool_task\check\cronrunning::get_status($delta);
+        if ($status == result::CRITICAL) {
+            $nextrun .= html_writer::tag(
+                'span',
+                get_string('overduetask', 'tool_task', $timestring),
+                [
+                    'class' => 'badge bg-danger text-white',
+                    'style' => 'margin-left: 0.5em',
+                ]
+            );
+        } else if ($status == result::WARNING) {
+            $nextrun .= html_writer::tag(
+                'span',
+                get_string('duetask', 'tool_task', $timestring),
+                [
+                    'class' => 'badge bg-warning text-white',
+                    'style' => 'margin-left: 0.5em',
+                ]
+            );
+        }
+        return $nextrun;
+    }
 
     /**
      * This function will render a table with the summary of all adhoc tasks.
@@ -131,10 +165,8 @@ class tool_task_renderer extends plugin_renderer_base {
                 $nextrun = '';
                 if ($stats['stop']) {
                     $nextrun = get_string('never', 'admin');
-                } else if ($stats['due'] > 0) {
-                    $nextrun = get_string('asap', 'tool_task');
                 } else if ($stats['nextruntime']) {
-                    $nextrun = userdate($stats['nextruntime']);
+                    $nextrun = $this->generate_next_run_field($stats['nextruntime']);
                 }
 
                 $data[] = new html_table_row([
@@ -291,7 +323,7 @@ class tool_task_renderer extends plugin_renderer_base {
                 $nextruntime = $task->get_next_run_time();
                 $due = $nextruntime < $now;
                 if ($task->get_attempts_available() > 0) {
-                    $nextrun = $due ? get_string('asap', 'tool_task') : userdate($nextruntime);
+                    $nextrun = $this->generate_next_run_field($nextruntime);
                 } else {
                     $nextrun = get_string('never', 'admin');
                 }
@@ -309,6 +341,7 @@ class tool_task_renderer extends plugin_renderer_base {
                     );
                 }
             }
+            $payload = \tool_task\helper::format_custom_data($task->get_custom_data_as_string());
 
             // Create fail delay cell.
             $faildelaycellcontent = $faildelay;
@@ -338,7 +371,7 @@ class tool_task_renderer extends plugin_renderer_base {
             $data[] = new html_table_row([
                 $taskidcell,
                 new html_table_cell($nextrun),
-                new html_table_cell($task->get_custom_data_as_string()),
+                new html_table_cell($payload),
                 $failedcell,
                 $faildelaycell,
                 $deletecell,
@@ -582,15 +615,15 @@ class tool_task_renderer extends plugin_renderer_base {
      */
     public function next_run_time(scheduled_task $task): string {
         $nextrun = $task->get_next_run_time();
-
+        $timegap = time() - $nextrun;
         if (!$task->is_component_enabled() && !$task->get_run_if_component_disabled()) {
             $nextrun = get_string('plugindisabled', 'tool_task');
         } else if ($task->get_disabled()) {
             $nextrun = get_string('taskdisabled', 'tool_task');
-        } else if ($nextrun > time()) {
+        } else if ($timegap <= 0) {
             $nextrun = userdate($nextrun);
         } else {
-            $nextrun = get_string('asap', 'tool_task');
+            $nextrun = $this->generate_next_run_field($nextrun);
         }
 
         return $nextrun;

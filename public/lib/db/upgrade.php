@@ -2178,5 +2178,17 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2026080700.01);
     }
 
+    if ($oldversion < 2026081800.01) {
+        // Define field custom_data to be added to task_log.
+        $table = new xmldb_table('task_log');
+        $field = new xmldb_field('custom_data', XMLDB_TYPE_TEXT, null, null, null, null, null, 'pid');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        // Conditionally launch add field custom_data.
+        upgrade_main_savepoint(true, 2026081800.01);
+    }
+
     return true;
 }

@@ -26,3 +26,14 @@
         text-decoration: underline;
     }
 }
+
+.path-admin .tool-task-custom-data {
+    max-height: 200px;
+    overflow: auto;
+}
+
+#page-admin-tasklogs .reportbuilder-table td,
+#page-admin-tool-task-adhoctasks .generaltable td,
+#page-admin-tool-task-runningtasks .generaltable td {
+    vertical-align: top;
+}
