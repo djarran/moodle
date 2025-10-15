@@ -98,6 +98,10 @@ final class question_test extends \basic_testcase {
         // check the calculation is robust to it.
         /** @var \qtype_ddimageortext_question $dd */
         $dd = \test_question_maker::make_question('ddimageortext');
+        $dd->choices[$dd->places[1]->group] = [];
+        $this->assertNull($dd->get_random_guess_score());
+        $dd->choices = [];
+        $this->assertNull($dd->get_random_guess_score());
         $dd->places = [];
         $this->assertNull($dd->get_random_guess_score());
     }
