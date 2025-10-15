@@ -139,6 +139,11 @@ final class question_type_test extends \advanced_testcase {
         $q = $this->get_test_question_data();
         $this->assertEqualsWithDelta(0.3333333, $this->qtype->get_random_guess_score($q), 0.0000001);
     }
+    public function test_get_random_guess_score_broken_question(): void {
+        $q = $this->get_test_question_data();
+        $q->options->subquestions = [];
+        $this->assertNull($this->qtype->get_random_guess_score($q));
+    }
 
     public function test_get_possible_responses(): void {
         $q = $this->get_test_question_data();
