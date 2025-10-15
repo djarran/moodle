@@ -146,6 +146,11 @@ class qtype_ddtoimage_question_base extends qtype_gapselect_question_base {
 
         $accum = 0;
         foreach ($this->places as $place) {
+            // This should not occur under normal conditions, but question data may become corrupted.
+            // Return NULL to prevent runtime errors.
+            if (empty($this->choices) || empty($this->choices[$place->group])) {
+                return null;
+            }
             foreach ($this->choices[$place->group] as $choice) {
                 if ($choice->infinite) {
                     return null;

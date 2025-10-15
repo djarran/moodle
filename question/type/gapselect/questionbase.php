@@ -178,9 +178,19 @@ abstract class qtype_gapselect_question_base extends question_graded_automatical
     }
 
     public function get_random_guess_score() {
+        // This should not occur under normal conditions, but question data may become corrupted.
+        // Return NULL to prevent runtime errors.
+        if (empty($this->places)) {
+            return null;
+        }
         $accum = 0;
 
         foreach ($this->places as $placegroup) {
+            // This should not occur under normal conditions, but question data may become corrupted.
+            // Return NULL to prevent runtime errors.
+            if (empty($this->choices) || empty($this->choices[$placegroup])) {
+                return null;
+            }
             $accum += 1 / count($this->choices[$placegroup]);
         }
 

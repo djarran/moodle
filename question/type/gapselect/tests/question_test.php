@@ -80,6 +80,15 @@ final class question_test extends \basic_testcase {
         $gapselect = \test_question_maker::make_question('gapselect', 'maths');
         $this->assertEquals(0.25, $gapselect->get_random_guess_score());
     }
+    public function test_get_random_guess_score_broken_question(): void {
+        $dd = \test_question_maker::make_question('gapselect');
+        $dd->choices[$dd->places[1]] = [];
+        $this->assertNull($dd->get_random_guess_score());
+        $dd->choices = [];
+        $this->assertNull($dd->get_random_guess_score());
+        $dd->places = [];
+        $this->assertNull($dd->get_random_guess_score());
+    }
 
     public function test_get_right_choice_for(): void {
         $gapselect = \test_question_maker::make_question('gapselect');
