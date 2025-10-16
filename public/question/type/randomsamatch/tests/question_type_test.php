@@ -30,6 +30,7 @@ require_once($CFG->dirroot . '/question/type/randomsamatch/questiontype.php');
  * @package   qtype_randomsamatch
  * @copyright 2025 Dustin Huynh (dustinhuynh@catalyst-au.net)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers \qtype_randomsamatch
  */
 final class question_type_test extends \advanced_testcase {
     public function test_get_random_guess_score(): void {
@@ -44,5 +45,4 @@ final class question_type_test extends \advanced_testcase {
         $question = \test_question_maker::make_question('randomsamatch');
         $this->assertNull($qtype->get_random_guess_score($question));
     }
-
 }

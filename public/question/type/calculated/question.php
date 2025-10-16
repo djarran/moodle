@@ -151,14 +151,39 @@ abstract class qtype_calculated_question_helper {
     public static function start_attempt(
             qtype_calculated_question_with_expressions $question,
             question_attempt_step $step, $variant) {
-
-        $question->vs = new qtype_calculated_variable_substituter(
-                $question->datasetloader->get_values($variant),
-                get_string('decsep', 'langconfig'));
-        $question->calculate_all_expressions();
-
+        $values = $question->datasetloader->get_values($variant);
+        self::start_attempt_without_zero_error($question, $variant, $values);
         foreach ($question->vs->get_values() as $name => $value) {
             $step->set_qt_var('_var_' . $name, $value);
+        }
+    }
+
+    /**
+     * Start attempt, regenerating values on DivisionByZeroError until success or max retries hit.
+     *
+     * @param object $question question to attempt
+     * @param int $variant random variant
+     * @param array $values variable name => value.
+     * @throws Exception
+     */
+    private static function start_attempt_without_zero_error($question, $variant, $values): void {
+        $maxretries = 5;
+        $originexeption = null;
+        for ($r = 0; $r < $maxretries; $r++) {
+            try {
+                $question->vs = new qtype_calculated_variable_substituter(
+                    $values,
+                    get_string('decsep', 'langconfig')
+                );
+                $question->calculate_all_expressions();
+                return;
+            } catch (DivisionByZeroError $e) {
+                $originexeption = $e;
+                $values = $question->datasetloader->regenerate_and_update_items_value($variant);
+            }
+        }
+        if ($originexeption) {
+            throw $originexeption;
         }
     }
 
@@ -170,10 +195,39 @@ abstract class qtype_calculated_question_helper {
                 $values[substr($name, 5)] = $value;
             }
         }
+        self::apply_attempt_state_without_zero_error($question, $step, $values);
+    }
 
-        $question->vs = new qtype_calculated_variable_substituter(
-                $values, get_string('decsep', 'langconfig'));
-        $question->calculate_all_expressions();
+    /**
+     * Apply attempt, regenerating values on DivisionByZeroError until success or max retries hit.
+     *
+     * @param object $question question to attempt
+     * @param question_attempt_step $step question attempt step
+     * @param array $values variable name => value.
+     * @throws Exception
+     */
+    private static function apply_attempt_state_without_zero_error($question, $step, $values) {
+        $maxretries = 5;
+        $originexeption = null;
+        for ($r = 0; $r < $maxretries; $r++) {
+            try {
+                $question->vs = new qtype_calculated_variable_substituter(
+                    $values,
+                    get_string('decsep', 'langconfig')
+                );
+                $question->calculate_all_expressions();
+                return;
+            } catch (DivisionByZeroError $e) {
+                $originexeption = $e;
+                $values = $question->datasetloader->regenerate_items_value();
+                foreach ($question->vs->get_values() as $name => $value) {
+                    $step->set_qt_var('_var_' . $name, $value);
+                }
+            }
+        }
+        if ($originexeption) {
+            throw $originexeption;
+        }
     }
 }
 
@@ -220,6 +274,63 @@ class qtype_calculated_dataset_loader {
 
         return $this->itemsavailable;
     }
+
+    /**
+     * Regenerated invalid values and update it in dataset
+     * @param int $itemnumber item number
+     * @return array regenerated values.
+     */
+    public function regenerate_and_update_items_value($itemnumber) {
+        global $DB;
+        $datasetitems = $DB->get_records_sql('
+                SELECT qdi.id, qdi.definition, qdd.name, qdi.value, qdd.options
+                  FROM {question_dataset_items} qdi
+                  JOIN {question_dataset_definitions} qdd ON qdd.id = qdi.definition
+                  JOIN {question_datasets} qd ON qdd.id = qd.datasetdefinition
+                 WHERE qd.question = ?
+                   AND qdi.itemnumber = ?
+                ', [$this->questionid, $itemnumber]);
+        $values = [];
+        $qtype = question_bank::get_qtype('calculated');
+        foreach ($datasetitems as $item) {
+            $qdi = new stdClass();
+            $qdi->id = $item->id;
+            $qdi->definition = $item->definition;
+            $qdi->itemnumber = $itemnumber;
+            $qdi->value = $qtype->generate_dataset_item($item->options);
+            $DB->update_record('question_dataset_items', $qdi);
+            $values[$item->name] = $qdi->value;
+        }
+        return $values;
+    }
+
+    /**
+     * Regenerated invalid values
+     *
+     * @return array regenerated values.
+     */
+    public function regenerate_items_value() {
+        global $DB;
+        $datadef = $DB->get_records_sql('
+                SELECT qdd.name, qdd.options
+                  FROM {question_dataset_definitions} qdd
+                  JOIN {question_datasets} qd ON qdd.id = qd.datasetdefinition
+                 WHERE qd.question = ?
+                ', [$this->questionid]);
+        $values = [];
+        $qtype = question_bank::get_qtype('calculated');
+        foreach ($datadef as $def) {
+            $value = $qtype->generate_dataset_item($def->options);
+            $values[$def->name] = $value;
+        }
+        return $values;
+    }
+
+    /**
+     * Regenerated invalid values
+     *
+     * @return array regenerated values.
+     */
 
     /**
      * Actually query the database for the values.
@@ -455,6 +566,10 @@ class qtype_calculated_variable_substituter {
             if (@eval('return true; $result = ' . $expression . ';')) {
                 return eval('return ' . $expression . ';');
             }
+        } catch (DivisionByZeroError $dbze) {
+            // Do NOT ignore division by zero.
+            // This error will be handled specifically.
+            throw $dbze;
         } catch (Throwable $e) {
             // PHP7 and later now throws ParseException and friends from eval(),
             // which is much better.
