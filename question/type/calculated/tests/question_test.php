@@ -293,4 +293,28 @@ final class question_test extends \advanced_testcase {
             $this->assertFalse(strstr($answer, "ERROR"), "Assert that 'ERROR' is not part of the answer!");
         }
     }
+
+    /**
+     * Test division error regeneration
+     *
+     * @covers \qtype_calculated
+     */
+    public function test_division_zero_regeneration(): void {
+        $question = \test_question_maker::make_question('calculated', 'zdiv');
+        $question->start_attempt(new question_attempt_step(), 1);
+        $values = $question->vs->get_values();
+        $this->assertEquals(1, $values["M"]);
+        $this->assertEquals(5, $values["SP"]);
+    }
+
+    /**
+     * Test division error regeneration exception after 5 retries
+     *
+     * @covers \qtype_calculated
+     */
+    public function test_division_zero_regeneration_exception(): void {
+        $this->expectException(\DivisionByZeroError::class);
+        $question = \test_question_maker::make_question('calculated', 'ezdiv');
+        $question->start_attempt(new question_attempt_step(), 1);
+    }
 }

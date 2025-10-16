@@ -41,7 +41,7 @@ require_once($CFG->dirroot . '/question/engine/tests/helpers.php');
  */
 class qtype_calculated_test_helper extends question_test_helper {
     public function get_test_questions() {
-        return ['sum', 'mult'];
+        return ['sum', 'mult', 'zdiv', 'ezdiv'];
     }
 
     /**
@@ -346,6 +346,83 @@ class qtype_calculated_test_helper extends question_test_helper {
         return $fromform;
     }
 
+    /**
+     * Makes a calculated question about zero division two numbers.
+     *
+     * @return qtype_calculated_question
+     * @throws coding_exception
+     */
+    public function make_calculated_question_zdiv() {
+        question_bank::load_question_definition_classes('calculated');
+        $q = new qtype_calculated_question();
+        test_question_maker::initialise_a_question($q);
+        $q->name = 'Zero division';
+        $q->questiontext = 'Assume return on the stock market is +{M}%. Return on Share ABC is -{={M}-{SP}}%.';
+        $q->generalfeedback = 'Generalfeedback: -{=({M}-{SP})/{M}} is the right answer.';
+
+        $q->answers = [
+            13 => new \qtype_calculated\qtype_calculated_answer(13, '({M}-{SP})/{M}', 1.0, 'Positive.', FORMAT_HTML, 0),
+            14 => new \qtype_calculated\qtype_calculated_answer(14, '{M}/({M}-{SP})', 0.0, 'Negative.', FORMAT_HTML, 0),
+        ];
+        foreach ($q->answers as $answer) {
+            $answer->correctanswerlength = 2;
+            $answer->correctanswerformat = 1;
+        }
+
+        $q->qtype = question_bank::get_qtype('calculated');
+        $q->unitdisplay = qtype_numerical::UNITOPTIONAL;
+        $q->unitgradingtype = 0;
+        $q->unitpenalty = 0;
+        $q->unit = 'cm';
+        $q->ap = new qtype_numerical_answer_processor([]);
+        $q->synchronised = false;
+        $q->datasetloader = new qtype_calculated_test_dataset_loader(0, [
+            ['M' => 1, 'SP' => 1],
+        ]);
+        $q->datasetloader->set_regenerateset(
+            ['M' => 1, 'SP' => 5]
+        );
+        return $q;
+    }
+
+    /**
+     * Makes a calculated question about zero division two numbers.
+     *
+     * @return qtype_calculated_question
+     * @throws coding_exception
+     */
+    public function make_calculated_question_ezdiv() {
+        question_bank::load_question_definition_classes('calculated');
+        $q = new qtype_calculated_question();
+        test_question_maker::initialise_a_question($q);
+        $q->name = 'Zero division exception';
+        $q->questiontext = 'Assume return on the stock market is +{M}%. Return on Share ABC is -{={M}-{SP}}%.';
+        $q->generalfeedback = 'Generalfeedback: -{=({M}-{SP})/{M}-{M} is the right answer.';
+
+        $q->answers = [
+            13 => new \qtype_calculated\qtype_calculated_answer(13, '({M}-{SP})/({M}-{M})', 1.0, 'Positive.', FORMAT_HTML, 0),
+            14 => new \qtype_calculated\qtype_calculated_answer(14, '{M}/({M}-{SP})', 0.0, 'Negative.', FORMAT_HTML, 0),
+        ];
+        foreach ($q->answers as $answer) {
+            $answer->correctanswerlength = 2;
+            $answer->correctanswerformat = 1;
+        }
+
+        $q->qtype = question_bank::get_qtype('calculated');
+        $q->unitdisplay = qtype_numerical::UNITOPTIONAL;
+        $q->unitgradingtype = 0;
+        $q->unitpenalty = 0;
+        $q->unit = 'cm';
+        $q->ap = new qtype_numerical_answer_processor([]);
+        $q->synchronised = false;
+        $q->datasetloader = new qtype_calculated_test_dataset_loader(0, [
+            ['M' => 1, 'SP' => 1],
+        ]);
+        $q->datasetloader->set_regenerateset(
+            ['M' => 1, 'SP' => 3]
+        );
+        return $q;
+    }
 }
 
 
@@ -359,6 +436,8 @@ class qtype_calculated_test_helper extends question_test_helper {
 class qtype_calculated_test_dataset_loader extends qtype_calculated_dataset_loader {
     protected $valuesets;
     protected $aresynchronised = [];
+    /** @var array $regenerateset */
+    protected $regenerateset = [];
 
     public function __construct($questionid, array $valuesets) {
         parent::__construct($questionid);
@@ -378,11 +457,36 @@ class qtype_calculated_test_dataset_loader extends qtype_calculated_dataset_load
     }
 
     /**
+     * Mock regenerated invalid values
+     * @param int   $itemnumber item number
+     * @return array mocked values.
+     */
+    public function regenerate_and_update_items_value($itemnumber) {
+        return $this->regenerateset;
+    }
+
+    /**
+     * Mock regenerated invalid values
+     * @return array mocked values.
+     */
+    public function regenerate_items_value() {
+        return $this->regenerateset;
+    }
+
+    /**
      * Allows the test to mock the return value of {@link datasets_are_synchronised()}.
      * @param int $category
      * @param bool $aresychronised
      */
     public function set_are_synchronised($category, $aresychronised) {
         $this->aresynchronised[$category] = $aresychronised;
+    }
+
+    /**
+     * Allows the test to mock the regenerated values.
+     * @param array $items
+     */
+    public function set_regenerateset($items) {
+        $this->regenerateset = $items;
     }
 }
