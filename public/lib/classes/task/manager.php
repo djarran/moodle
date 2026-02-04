@@ -298,6 +298,26 @@ class manager {
         unset($record->lastruntime);
         $result = $DB->update_record('task_scheduled', $record);
 
+        if ($result) {
+            $event = \tool_task\event\scheduled_task_updated::create([
+                'objectid' => $record->id,
+                'context' => \context_system::instance(),
+                'other' => [
+                    'classname' => $classname,
+                    'component' => $task->get_component(),
+                    'updatedsettings' => [
+                        'minute' => $record->minute,
+                        'hour' => $record->hour,
+                        'month' => $record->month,
+                        'dayofweek' => $record->dayofweek,
+                        'day' => $record->day,
+                        'disabled' => $record->disabled,
+                    ],
+                ],
+            ]);
+            $event->trigger();
+        }
+
         return $result;
     }
 
