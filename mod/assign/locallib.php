@@ -2574,7 +2574,6 @@ class assign {
 
         $params['assignid'] = $this->get_instance()->id;
         $params['submitted'] = ASSIGN_SUBMISSION_STATUS_SUBMITTED;
-        $sqlscalegrade = $this->get_instance()->grade < 0 ? ' OR g.grade = -1' : '';
 
         $sql = 'SELECT COUNT(s.userid)
                    FROM {assign_submission} s
@@ -2588,8 +2587,10 @@ class assign {
                         s.assignment = :assignid AND
                         s.timemodified IS NOT NULL AND
                         s.status = :submitted AND
-                        (s.timemodified >= g.timemodified OR g.timemodified IS NULL OR g.grade IS NULL '
-                            . $sqlscalegrade . ')';
+                        (s.timemodified >= g.timemodified OR
+                           g.timemodified IS NULL OR
+                           g.grade IS NULL OR
+                           g.grade = ' . ASSIGN_GRADE_NOT_SET . ')';
 
         return $DB->count_records_sql($sql, $params);
     }
@@ -3948,7 +3949,7 @@ class assign {
             } else {
                 $grade->timemodified = $grade->timecreated;
             }
-            $grade->grade = -1;
+            $grade->grade = ASSIGN_GRADE_NOT_SET;
             // Do not set the grader id here as it would be the admin users which is incorrect.
             $grade->grader = -1;
             if ($attemptnumber >= 0) {
@@ -6120,7 +6121,7 @@ class assign {
         if ($this->get_instance()->markingworkflow && !empty($grade) &&
                 $this->get_grading_status($grade->userid) != ASSIGN_MARKING_WORKFLOW_STATE_RELEASED) {
             // Remove the grade (if it exists) from the gradebook as it is not 'final'.
-            $grade->grade = -1;
+            $grade->grade = ASSIGN_GRADE_NOT_SET;
             $grade->feedbacktext = '';
             $grade->feebackfiles = [];
         }

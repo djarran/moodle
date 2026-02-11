@@ -1421,6 +1421,17 @@ final class locallib_test extends \advanced_testcase {
         $this->assertEquals(0, $assign->count_submissions_with_status(ASSIGN_SUBMISSION_STATUS_DRAFT));
         $this->assertEquals(1, $assign->count_submissions_with_status(ASSIGN_SUBMISSION_STATUS_SUBMITTED));
         $this->assertEquals(0, $assign->count_submissions_with_status(ASSIGN_SUBMISSION_STATUS_REOPENED));
+        // Test different GRADE_NOT_SET value.
+        $assign->testable_apply_grade_to_user([
+            'grade' => ASSIGN_GRADE_NOT_SET,
+        ], $student->id, 0);
+        $this->assertEquals(1, $assign->count_grades());
+        $this->assertEquals(1, $assign->count_submissions_need_grading());
+        $assign->testable_apply_grade_to_user([
+            'grade' => null,
+        ], $student->id, 0);
+        $this->assertEquals(1, $assign->count_grades());
+        $this->assertEquals(1, $assign->count_submissions_need_grading());
     }
 
     public function test_count_submissions_graded(): void {
