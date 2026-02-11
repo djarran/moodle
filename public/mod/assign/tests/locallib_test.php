@@ -1712,15 +1712,24 @@ final class locallib_test extends \advanced_testcase {
             'groupa' => $this->getDataGenerator()->create_group(['courseid' => $course->id]),
             'groupb' => $this->getDataGenerator()->create_group(['courseid' => $course->id]),
             'groupc' => $this->getDataGenerator()->create_group(['courseid' => $course->id]),
+            'groupd' => $this->getDataGenerator()->create_group(['courseid' => $course->id]),
         ];
 
-        // Create 10 students:
+        // Create 12 students:
         // - groupa (3): s1 to s3 - 3 submitted, 1 graded.
         // - groupb (5): s4 to s8 - 1 submitted, 1 graded.
         // - groupc (0).
-        // - no group (2): s9 and s10 - 1 submitted.
-        for ($i = 0; $i < 10; $i++) {
-            $group = $i < 3 ? $allgroups['groupa'] : ($i < 8 ? $allgroups['groupb'] : null);
+        // - groupd (2) s9 and s10 - 2 submitted with different non-grade values.
+        // - no group (2): s11 and s12 - 1 submitted.
+        for ($i = 0; $i < 12; $i++) {
+            $group = null;
+            if ($i < 3) {
+                $group = $allgroups['groupa'];
+            } else if ($i < 8) {
+                $group = $allgroups['groupb'];
+            } else if ($i < 10) {
+                $group = $allgroups['groupd'];
+            }
             $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
             if ($group) {
                 $this->getDataGenerator()->create_group_member([
@@ -1729,28 +1738,43 @@ final class locallib_test extends \advanced_testcase {
                 ]);
             }
 
-            if ($i < 3 || $i == 5 || $i > 8) {
+            if ($i < 3 || $i == 5 || ($i >= 8 && $i <= 10)) {
                 $this->add_submission($student, $assign);
                 $this->submit_for_grading($student, $assign);
             }
+
+            if ($i == 8) {
+                $assign->testable_apply_grade_to_user((object) [
+                    'grade' => null,
+                ], $student->id, 0);
+            }
+
+            if ($i == 9) {
+                $assign->testable_apply_grade_to_user((object) [
+                    'grade' => ASSIGN_GRADE_NOT_SET,
+                ], $student->id, 0);
+            }
+
             if ($i == 0 || $i == 5) {
                 $this->mark_submission($teacher, $assign, $student, 50.0);
             }
         }
 
-        $this->assertEquals(5, $assign->count_submissions());
+        $this->assertEquals(7, $assign->count_submissions());
         $this->assertEquals(0, $assign->count_submissions_with_status_and_groups(ASSIGN_SUBMISSION_STATUS_NEW));
         $this->assertEquals(0, $assign->count_submissions_with_status_and_groups(ASSIGN_SUBMISSION_STATUS_DRAFT));
-        $this->assertEquals(5, $assign->count_submissions_with_status_and_groups(ASSIGN_SUBMISSION_STATUS_SUBMITTED));
+        $this->assertEquals(7, $assign->count_submissions_with_status_and_groups(ASSIGN_SUBMISSION_STATUS_SUBMITTED));
         $this->assertEquals(0, $assign->count_submissions_with_status_and_groups(ASSIGN_SUBMISSION_STATUS_REOPENED));
-        $this->assertEquals(3, $assign->count_submissions_need_grading_with_groups());
+        $this->assertEquals(5, $assign->count_submissions_need_grading_with_groups());
         $this->assertEquals(2, $assign->count_submissions_need_grading_with_groups([$allgroups['groupa']->id]));
         $this->assertEquals(0, $assign->count_submissions_need_grading_with_groups([$allgroups['groupb']->id]));
         $this->assertEquals(0, $assign->count_submissions_need_grading_with_groups([$allgroups['groupc']->id]));
-        $this->assertEquals(2, $assign->count_submissions_need_grading_with_groups([
+        $this->assertEquals(2, $assign->count_submissions_need_grading_with_groups([$allgroups['groupd']->id]));
+        $this->assertEquals(4, $assign->count_submissions_need_grading_with_groups([
             $allgroups['groupa']->id,
             $allgroups['groupb']->id,
             $allgroups['groupc']->id,
+            $allgroups['groupd']->id,
         ]));
     }
 
