@@ -2677,7 +2677,6 @@ class assign {
         ];
         [$esql, $eparams] = get_enrolled_sql($this->get_context(), '', $groupids, true);
         $params += $eparams;
-        $sqlscalegrade = $this->get_instance()->grade < 0 ? ' OR g.grade = ' . ASSIGN_GRADE_NOT_SET : '';
         $sql = '     FROM {assign_submission} s
                 LEFT JOIN {assign_grades} g ON
                           s.assignment = g.assignment AND
@@ -2688,7 +2687,10 @@ class assign {
                           s.status = :submitted AND
                           s.latest = 1 AND
                           s.timemodified IS NOT NULL AND
-                          (s.timemodified >= g.timemodified OR g.timemodified IS NULL OR g.grade IS NULL ' . $sqlscalegrade . ')';
+                          (s.timemodified >= g.timemodified OR
+                           g.timemodified IS NULL OR
+                           g.grade IS NULL OR
+                           g.grade = ' . ASSIGN_GRADE_NOT_SET . ')';
 
         if ($this->get_instance()->teamsubmission) {
             // For team submissions, only count the teams (instead of the participants).
@@ -4241,7 +4243,7 @@ class assign {
             } else {
                 $grade->timemodified = $grade->timecreated;
             }
-            $grade->grade = -1;
+            $grade->grade = ASSIGN_GRADE_NOT_SET;
             // Do not set the grader id here as it would be the admin users which is incorrect.
             $grade->grader = -1;
             if ($attemptnumber >= 0) {
@@ -6447,7 +6449,7 @@ class assign {
         if ($this->get_instance()->markingworkflow && !empty($grade) &&
                 $this->get_grading_status($grade->userid) != ASSIGN_MARKING_WORKFLOW_STATE_RELEASED) {
             // Remove the grade (if it exists) from the gradebook as it is not 'final'.
-            $grade->grade = -1;
+            $grade->grade = ASSIGN_GRADE_NOT_SET;
             $grade->feedbacktext = '';
             $grade->feebackfiles = [];
         }
