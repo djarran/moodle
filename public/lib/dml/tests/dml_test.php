@@ -478,6 +478,16 @@ final class dml_test extends \database_driver_testcase {
         $inparams = array('abc', 'ABC', null, '1', 1, 1.4);
         list($sql, $params) = $DB->fix_sql_params($sql, $inparams);
         $this->assertSame(array_values($params), array_values($inparams));
+
+        // INF/NAN is not allow as a param.
+        $sql = "SELECT * FROM {{$tablename}} WHERE name = :name, float = :float";
+        $params = array('name' => 'record1', 'float' => INF);
+        try {
+            $DB->fix_sql_params($sql, $params);
+            $this->fail("Expecting an exception, none occurred");
+        } catch (\moodle_exception $e) {
+            $this->assertInstanceOf('coding_exception', $e);
+        }
     }
 
     /**
