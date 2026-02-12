@@ -884,7 +884,19 @@ abstract class moodle_database {
      */
     protected function detect_objects($value) {
         if (is_object($value)) {
-            throw new coding_exception('Invalid database query parameter value', 'Objects are are not allowed: '.get_class($value));
+            throw new coding_exception('Invalid database query parameter value', 'Objects are not allowed: '.get_class($value));
+        }
+    }
+
+    /**
+     * Detects INF/NA parameters and throws exception if found
+     * @param mixed $value
+     * @return void
+     * @throws coding_exception if object detected
+     */
+    protected function detect_inf($value) {
+        if (is_float($value) && !is_finite($value)) {
+            throw new coding_exception('Invalid database query parameter value', 'Non-finite float (NaN/INF)are not allowed');
         }
     }
 
@@ -893,6 +905,7 @@ abstract class moodle_database {
      * @param string $sql The query or part of it.
      * @param array $params The query parameters.
      * @return array (sql, params, type of params)
+     * @throws coding_exception|dml_exception
      */
     public function fix_sql_params($sql, ?array $params=null) {
         global $CFG;
@@ -908,6 +921,7 @@ abstract class moodle_database {
         // cast booleans to 1/0 int and detect forbidden objects
         foreach ($params as $key => $value) {
             $this->detect_objects($value);
+            $this->detect_inf($value);
             $params[$key] = is_bool($value) ? (int)$value : $value;
         }
 
