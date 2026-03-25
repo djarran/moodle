@@ -481,7 +481,7 @@ final class dml_test extends \database_driver_testcase {
 
         // INF/NAN is not allow as a param.
         $sql = "SELECT * FROM {{$tablename}} WHERE name = :name, float = :float";
-        $params = array('name' => 'record1', 'float' => INF);
+        $params = ['name' => 'record1', 'float' => INF];
         try {
             $DB->fix_sql_params($sql, $params);
             $this->fail("Expecting an exception, none occurred");
