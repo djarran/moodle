@@ -231,7 +231,6 @@ class qtype_calculated_test_helper extends question_test_helper {
         $q->unitdisplay = qtype_numerical::UNITOPTIONAL;
         $q->unitgradingtype = 0;
         $q->unitpenalty = 0;
-        $q->unit = 'cm';
         $q->ap = new qtype_numerical_answer_processor([]);
         $q->synchronised = false;
 
@@ -373,7 +372,6 @@ class qtype_calculated_test_helper extends question_test_helper {
         $q->unitdisplay = qtype_numerical::UNITOPTIONAL;
         $q->unitgradingtype = 0;
         $q->unitpenalty = 0;
-        $q->unit = 'cm';
         $q->ap = new qtype_numerical_answer_processor([]);
         $q->synchronised = false;
         $q->datasetloader = new qtype_calculated_test_dataset_loader(0, [
@@ -412,7 +410,6 @@ class qtype_calculated_test_helper extends question_test_helper {
         $q->unitdisplay = qtype_numerical::UNITOPTIONAL;
         $q->unitgradingtype = 0;
         $q->unitpenalty = 0;
-        $q->unit = 'cm';
         $q->ap = new qtype_numerical_answer_processor([]);
         $q->synchronised = false;
         $q->datasetloader = new qtype_calculated_test_dataset_loader(0, [
