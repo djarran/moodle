@@ -884,7 +884,10 @@ abstract class moodle_database {
      */
     protected function detect_objects($value) {
         if (is_object($value)) {
-            throw new coding_exception('Invalid database query parameter value', 'Objects are not allowed: '.get_class($value));
+            throw new coding_exception(
+                'Invalid database query parameter value',
+                'Objects are not allowed: ' . get_class($value)
+            );
         }
     }
 
@@ -896,7 +899,10 @@ abstract class moodle_database {
      */
     protected function detect_inf($value) {
         if (is_float($value) && !is_finite($value)) {
-            throw new coding_exception('Invalid database query parameter value', 'Non-finite float (NaN/INF)are not allowed');
+            throw new coding_exception(
+                'Invalid database query parameter value',
+                'Non-finite float (NaN/INF) are not allowed'
+            );
         }
     }
 
