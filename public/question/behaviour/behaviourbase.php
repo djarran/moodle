@@ -286,7 +286,12 @@ abstract class question_behaviour {
      * @return array name => value pairs.
      */
     public function get_resume_data() {
-        $olddata = $this->qa->get_step(0)->get_all_data();
+        $olddata = [];
+        foreach ($this->qa->get_step(0)->get_all_data() as $name => $value) {
+            if (str_starts_with($name, '_') || str_starts_with($name, '-_') || str_starts_with($name, ':_')) {
+                $olddata[$name] = $value;
+            }
+        }
         $olddata = $this->qa->get_last_qt_data() + $olddata;
         $olddata = $this->get_our_resume_data() + $olddata;
         return $olddata;
