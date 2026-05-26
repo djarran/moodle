@@ -35,9 +35,11 @@ require_once($CFG->dirroot . '/question/type/randomsamatch/questiontype.php');
 final class question_type_test extends \advanced_testcase {
     public function test_get_random_guess_score(): void {
         $qtype = new qtype_randomsamatch();
-        $question = \test_question_maker::make_question('randomsamatch');
-        $question->options = new \stdClass();
-        $question->options->choose = 2;
+        $question = (object) [
+            'options' => (object) [
+                'choose' => 2,
+            ],
+        ];
         $this->assertEquals(0.5, $qtype->get_random_guess_score($question));
     }
     public function test_get_random_guess_score_broken_question(): void {
