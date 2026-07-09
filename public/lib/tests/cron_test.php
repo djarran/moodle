@@ -293,4 +293,61 @@ final class cron_test extends \advanced_testcase {
         $this->assertStringContainsString('Adhoc task complete:', $output);
         $this->assertStringNotContainsString('Adhoc task delayed:', $output);
     }
+
+    /**
+     * Test that run_inner_adhoc_task() cancels tasks for users who became missing or inactive
+     * after queueing.
+     *
+     * @covers \core\cron::run_inner_adhoc_task
+     * @covers \core\task\manager::adhoc_task_complete
+     */
+    public function test_run_inner_adhoc_task_completes_when_task_user_is_unsuitable(): void {
+        global $CFG, $DB;
+
+        $this->resetAfterTest();
+        $this->preventResetByRollback();
+        cron::reset_user_cache();
+
+        // Successful cancellations are only persisted when all task results are logged.
+        $CFG->task_logmode = \core\task\logmanager::MODE_ALL;
+
+        $clock = $this->mock_clock_with_frozen(1000);
+
+        $suspendeduser = $this->getDataGenerator()->create_user();
+        $suspendedtask = new \core\task\adhoc_test_task();
+        $suspendedtask->set_userid($suspendeduser->id);
+        $suspendedtaskid = manager::queue_adhoc_task($suspendedtask);
+        $DB->set_field('user', 'suspended', 1, ['id' => $suspendeduser->id]);
+
+        $missinguser = $this->getDataGenerator()->create_user();
+        $missingtask = new \core\task\adhoc_test_task();
+        $missingtask->set_userid($missinguser->id);
+        $missingtaskid = manager::queue_adhoc_task($missingtask);
+        $DB->delete_records('user', ['id' => $missinguser->id]);
+
+        $tasks = [
+            [$suspendedtaskid, $suspendeduser->id],
+            [$missingtaskid, $missinguser->id],
+        ];
+
+        foreach ($tasks as [$taskid, $userid]) {
+            $task = manager::get_next_adhoc_task($clock->time());
+
+            ob_start();
+            cron::run_inner_adhoc_task($task);
+            $output = ob_get_clean();
+
+            // Task must have been deleted after successful completion.
+            $this->assertFalse($DB->record_exists('task_adhoc', ['id' => $taskid]));
+
+            // Ensure that task completes (0 = pass).
+            $result = $DB->get_field('task_log', 'result', [
+                'classname' => \core\task\adhoc_test_task::class,
+                'userid' => $userid,
+            ], MUST_EXIST);
+
+            $this->assertEquals(0, (int) $result);
+            $this->assertStringContainsString('Adhoc task complete:', $output);
+        }
+    }
 }
