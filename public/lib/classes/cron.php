@@ -493,11 +493,11 @@ class cron {
             }
 
             if (empty($user)) {
-                // A user missing in the database will never reappear so the task needs to be failed to ensure that locks are
-                // removed, and then removed to prevent future runs.
+                // The user is missing or no longer active. Complete the task successfully to ensure that locks are
+                // removed and to prevent future runs.
                 // A task running as a user should only be run as that user.
-                \core\task\manager::adhoc_task_failed($task);
-                $DB->delete_records('task_adhoc', ['id' => $task->get_id()]);
+                mtrace("Adhoc task complete: " . get_class($task));
+                \core\task\manager::adhoc_task_complete($task);
 
                 return;
             }
