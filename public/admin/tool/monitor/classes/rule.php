@@ -125,8 +125,8 @@ class rule {
             $cms = get_fast_modinfo($courseid);
             $instances = $cms->get_instances_of(str_replace('mod_', '',  $this->plugin));
             foreach ($instances as $cminfo) {
-                // Don't list instances that are not visible or available to the user.
-                if ($cminfo->uservisible && $cminfo->available) {
+                // Don't list instances that are not accessible to the user.
+                if ($cminfo->uservisible) {
                     $options[$cminfo->id] = $cminfo->get_formatted_name();
                 }
             }
@@ -154,7 +154,7 @@ class rule {
         if ($cmid !== 0) {
             $cms = get_fast_modinfo($courseid);
             $cminfo = $cms->get_cm($cmid);
-            if (!$cminfo->uservisible || !$cminfo->available) {
+            if (!$cminfo->uservisible) {
                 // Trying to subscribe to a hidden or restricted cm. Should never happen.
                 throw new \coding_exception('You cannot do that');
             }

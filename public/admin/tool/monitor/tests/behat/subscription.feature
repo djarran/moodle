@@ -181,3 +181,40 @@ Feature: tool_monitor_subscriptions
     And I should not see "You can manage rules from the Event monitoring rules page."
     And I set the field "Select a course" to "Course 2"
     And I should see "You can manage rules from the Event monitoring rules page."
+
+  Scenario: Subscribe to an activity with overridden availability restrictions
+    Given the following "activity" exists:
+      | activity | assign                |
+      | course   | C1                    |
+      | section  | 1                     |
+      | name     | Restricted assignment |
+    And I am on the "Restricted assignment" "assign activity" page logged in as "teacher1"
+    And I navigate to "Settings" in current page administration
+    And I expand all fieldsets
+    And I click on "Add restriction..." "button"
+    And I click on "Date" "button" in the "Add restriction..." "dialogue"
+    And I set the following fields to these values:
+      | x[day]   | 31   |
+      | x[month] | 12   |
+      | x[year]  | 2037 |
+    And I click on ".availability-item .availability-eye img" "css_element"
+    And I press "Save and return to course"
+    And I navigate to "Reports" in current page administration
+    And I click on "Event monitoring rules" "link"
+    And I press "Add a new rule"
+    And I set the following fields to these values:
+      | name                 | Restricted assignment rule                    |
+      | plugin               | Assignment                                    |
+      | eventname            | Course module viewed                          |
+      | id_description       | Monitor views of the restricted assignment.   |
+      | frequency            | 1                                             |
+      | minutes              | 1                                             |
+      | Notification message | The restricted assignment was viewed.         |
+    And I press "Save changes"
+    And I follow "Preferences" in the user menu
+    And I follow "Event monitoring"
+    And I set the field "Select a course" to "Course 1"
+    Then the "Subscribe to rule \"Restricted assignment rule\"" select box should contain "Restricted assignment"
+    When I set the field "Subscribe to rule \"Restricted assignment rule\"" to "Restricted assignment"
+    Then I should see "Subscription successfully created"
+    And I should see "Restricted assignment" in the "#toolmonitorsubs_r0" "css_element"

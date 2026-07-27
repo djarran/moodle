@@ -16,6 +16,9 @@
 
 namespace tool_monitor;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use tool_monitor\task\check_subscriptions;
+
 /**
  * Unit tests for the tool_monitor clean events task.
  * @since 3.2.0
@@ -25,6 +28,7 @@ namespace tool_monitor;
  * @copyright  2016 Jake Dallimore <jrhdallimore@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+#[CoversClass(check_subscriptions::class)]
 final class task_check_subscriptions_test extends \advanced_testcase {
 
     private $course;
@@ -362,5 +366,50 @@ final class task_check_subscriptions_test extends \advanced_testcase {
         // The subscription should now be active again.
         $this->reload_subscription();
         $this->assertEquals(true, \tool_monitor\subscription_manager::subscription_is_active($this->subscription));
+    }
+
+    /**
+     * Tests that overridden availability restrictions do not deactivate a course module subscription.
+     */
+    public function test_user_with_overridden_availability_restriction(): void {
+        // Enrol the user as a teacher. This role should have the required capability to ignore availability restrictions.
+        $this->getDataGenerator()->enrol_user($this->user->id, $this->course->id, $this->teacherrole->id);
+
+        // Create activity and restrict access until the next day.
+        $availability = json_encode(\core_availability\tree::get_root_json(
+            [
+                \availability_date\condition::get_json(
+                    \availability_date\condition::DIRECTION_FROM,
+                    time() + DAYSECS,
+                ),
+            ],
+            \core_availability\tree::OP_AND,
+            false,
+        ));
+        $book = $this->getDataGenerator()->create_module('book', [
+            'course' => $this->course->id,
+            'availability' => $availability,
+        ]);
+
+        // Ensure the user can see the activity as they have the ignoreavailabilityrestrictions capability.
+        $cm = get_fast_modinfo($this->course, $this->user->id)->get_cm($book->cmid);
+        $this->assertFalse($cm->available);
+        $this->assertTrue($cm->uservisible);
+
+        // Create subscription.
+        $subscription = (object) [
+            'courseid' => $this->course->id,
+            'userid' => $this->user->id,
+            'ruleid' => $this->rule->id,
+            'cmid' => $book->cmid,
+        ];
+        $monitorgenerator = $this->getDataGenerator()->get_plugin_generator('tool_monitor');
+        $this->subscription = $monitorgenerator->create_subscription($subscription);
+
+        // Ensure the subscription remains active after task execution.
+        $task = new \tool_monitor\task\check_subscriptions();
+        $task->execute();
+        $this->reload_subscription();
+        $this->assertTrue(\tool_monitor\subscription_manager::subscription_is_active($this->subscription));
     }
 }

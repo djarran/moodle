@@ -170,14 +170,14 @@ class check_subscriptions extends \core\task\scheduled_task {
             // Otherwise, check the course module info. We use the same checks as on the subscription page.
             $modinfo = get_fast_modinfo($course, $sub->userid);
             $cm = $modinfo->get_cm($sub->cmid);
-            if (!$cm || !$cm->uservisible || !$cm->available) {
+            if (!$cm || !$cm->uservisible) {
                 if (subscription_manager::subscription_is_active($sub)) {
                     $todeactivate[] = $sub->id;
                 }
                 continue;
             }
 
-            // The course module is available and visible, so make a decision.
+            // The course module is accessible to the user, so make a decision.
             if (!subscription_manager::subscription_is_active($sub)) {
                 $toactivate[] = $sub->id;
             }

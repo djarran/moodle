@@ -16,6 +16,9 @@
 
 namespace tool_monitor;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversMethod;
+
 /**
  * Unit tests for rule manager api.
  *
@@ -24,6 +27,8 @@ namespace tool_monitor;
  * @copyright  2014 onwards Simey Lameze <simey@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+#[CoversClass(rule_manager::class)]
+#[CoversMethod(rule::class, 'get_subscribe_options')]
 final class rule_manager_test extends \advanced_testcase {
 
     /**
@@ -79,6 +84,65 @@ final class rule_manager_test extends \advanced_testcase {
         $rules1 = \tool_monitor\rule_manager::get_rule($rule->id);
         $this->assertInstanceOf('tool_monitor\rule', $rules1);
         $this->assertEquals($rules1, $rule);
+    }
+
+    /**
+     * Tests activity subscriptions with the moodle/course:ignoreavailabilityrestrictions capability.
+     */
+    public function test_get_subscribe_options_uses_effective_access(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+
+        $course = $this->getDataGenerator()->create_course();
+        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
+        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+
+        // Create activity and restrict access until the next day.
+        $availability = json_encode(\core_availability\tree::get_root_json(
+            [
+                \availability_date\condition::get_json(
+                    \availability_date\condition::DIRECTION_FROM,
+                    time() + DAYSECS,
+                ),
+            ],
+            \core_availability\tree::OP_AND,
+            false,
+        ));
+        $activity = $this->getDataGenerator()->create_module('assign', [
+            'course' => $course->id,
+            'availability' => $availability,
+        ]);
+        $activityevent = \mod_assign\event\course_module_viewed::class;
+
+        $monitorgenerator = $this->getDataGenerator()->get_plugin_generator('tool_monitor');
+        $rule = $monitorgenerator->create_rule([
+            'plugin' => \core\component::get_component_from_classname($activityevent),
+            'eventname' => '\\' . $activityevent,
+        ]);
+
+        // Ensure the student cannot see the activity as they have not met the availability conditions.
+        $this->setUser($student);
+        $modinfo = get_fast_modinfo($course, $student->id)->get_cm($activity->cmid);
+        $this->assertFalse($modinfo->uservisible);
+        $this->assertArrayNotHasKey($activity->cmid, $rule->get_subscribe_options($course->id)->options);
+
+        // Ensure the teacher can see the activity as they have the ignoreavailabilityrestrictions capability.
+        $this->setUser($teacher);
+        $modinfo = get_fast_modinfo($course, $teacher->id)->get_cm($activity->cmid);
+        $this->assertFalse($modinfo->available);
+        $this->assertTrue($modinfo->uservisible);
+        $this->assertArrayHasKey($activity->cmid, $rule->get_subscribe_options($course->id)->options);
+
+        // Ensure the teacher can subscribe to the activity.
+        $rule->subscribe_user($course->id, $activity->cmid);
+        $usersubscription = $DB->record_exists('tool_monitor_subscriptions', [
+            'ruleid' => $rule->id,
+            'courseid' => $course->id,
+            'cmid' => $activity->cmid,
+            'userid' => $teacher->id,
+        ]);
+        $this->assertTrue($usersubscription);
     }
 
     /**
