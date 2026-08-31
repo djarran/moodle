@@ -309,6 +309,7 @@ class tool_task_renderer extends plugin_renderer_base {
                     );
                 }
             }
+            $payload = \core\task\helper::format_custom_data($task->get_custom_data_as_string());
 
             // Create fail delay cell.
             $faildelaycellcontent = $faildelay;
@@ -338,7 +339,7 @@ class tool_task_renderer extends plugin_renderer_base {
             $data[] = new html_table_row([
                 $taskidcell,
                 new html_table_cell($nextrun),
-                new html_table_cell($task->get_custom_data_as_string()),
+                new html_table_cell($payload),
                 $failedcell,
                 $faildelaycell,
                 $deletecell,
