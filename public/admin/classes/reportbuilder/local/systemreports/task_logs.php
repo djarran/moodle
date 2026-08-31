@@ -47,7 +47,7 @@ class task_logs extends system_report {
         $this->add_entity($entitymain);
 
         // Any columns required by actions should be defined here to ensure they're always available.
-        $this->add_base_fields("{$entitymainalias}.id");
+        $this->add_base_fields("{$entitymainalias}.id, {$entitymainalias}.result");
 
         // We can join the "user" entity to our "main" entity and use the fullname column from the user entity.
         $entityuser = new user();
@@ -113,12 +113,30 @@ class task_logs extends system_report {
                 return html_writer::link(new moodle_url('/admin/tasklogs.php', ['logid' => $row->id]), $output);
             });
 
+        // Wrap the task result in a label.
+        $this->get_column('task_log:result')
+            ->add_callback(static function (string $output, stdClass $row): string {
+                return html_writer::tag('span', $output, [
+                    'class' => 'badge ' . ( $row->success ? 'badge-success' : 'badge-danger' ),
+                ]);
+            });
+
         // Rename the user fullname column.
         $this->get_column('user:fullname')
             ->set_title(new lang_string('user', 'admin'));
 
         // It's possible to set a default initial sort direction for one column.
         $this->set_initial_sort_column('task_log:starttime', SORT_DESC);
+    }
+
+    /**
+     * Row class
+     *
+     * @param \stdClass $row
+     * @return string
+     */
+    public function get_row_class(\stdClass $row): string {
+        return $row->result ? 'table-danger' : '';
     }
 
     /**
