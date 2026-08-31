@@ -101,6 +101,8 @@ class task_logs extends system_report {
             'task_log:hostname',
             'task_log:pid',
             'task_log:database',
+            'task_log:id',
+            'task_log:customdata',
             'task_log:result',
         ]);
 
@@ -129,12 +131,14 @@ class task_logs extends system_report {
         $this->add_filters_from_entities([
             'task_log:name',
             'task_log:type',
-            'task_log:output',
             'task_log:result',
+            'task_log:output',
             'task_log:timestart',
             'task_log:duration',
             'task_log:dbreads',
             'task_log:dbwrites',
+            'task_log:id',
+            'task_log:customdata',
         ]);
     }
 
