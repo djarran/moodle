@@ -45,6 +45,7 @@ final class running_test extends \advanced_testcase {
         // Create and queue 2 new ad-hoc tasks.
         $task1 = new adhoc_test_task();
         $task1->set_next_run_time(time() - 20);
+        $task1->set_custom_data_as_string('{"name":"first"}');
         manager::queue_adhoc_task($task1);
         $task2 = new adhoc_test2_task();
         $task2->set_next_run_time(time() - 10);
@@ -65,6 +66,7 @@ final class running_test extends \advanced_testcase {
             $this->assertEquals('adhoc', $item->type);
             $this->assertLessThanOrEqual($after, $item->timestarted);
             $this->assertGreaterThanOrEqual($before, $item->timestarted);
+            $this->assertSame('{"name":"first"}', $item->customdata);
         }
 
         // Mark the second task running and check results.
@@ -118,6 +120,7 @@ final class running_test extends \advanced_testcase {
             $this->assertLessThanOrEqual($after, $item->timestarted);
             $this->assertGreaterThanOrEqual($before, $item->timestarted);
             $this->assertEquals('\core\task\session_cleanup_task', $item->classname);
+            $this->assertNull($item->customdata);
         }
 
         // Mark the second task running and check results. We have to change the times so the other

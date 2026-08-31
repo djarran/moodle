@@ -226,6 +226,31 @@ final class task_logs_test extends core_reportbuilder_testcase {
     }
 
     /**
+     * Test filtering by task log ID.
+     */
+    public function test_datasource_task_id_filter(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->generate_task_log_data(true, 3, 2, 1654038000, 1654038060);
+        $this->generate_task_log_data(true, 3, 2, 1654038100, 1654038160);
+        $taskid = $DB->get_field_sql('SELECT MIN(id) FROM {task_log}');
+
+        /** @var core_reportbuilder_generator $generator */
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_reportbuilder');
+        $report = $generator->create_report(['name' => 'Tasks', 'source' => task_logs::class, 'default' => 0]);
+        $generator->create_column(['reportid' => $report->get('id'), 'uniqueidentifier' => 'task_log:id']);
+        $generator->create_filter(['reportid' => $report->get('id'), 'uniqueidentifier' => 'task_log:id']);
+
+        $content = $this->get_custom_report_content($report->get('id'), 0, [
+            'task_log:id_operator' => number::EQUAL_TO,
+            'task_log:id_value1' => $taskid,
+        ]);
+        $this->assertCount(1, $content);
+        $this->assertEquals($taskid, reset($content[0]));
+    }
+
+    /**
      * Stress test datasource
      *
      * In order to execute this test PHPUNIT_LONGTEST should be defined as true in phpunit.xml or directly in config.php

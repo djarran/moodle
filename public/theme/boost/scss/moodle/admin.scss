@@ -657,6 +657,15 @@
         font-size: $font-size-sm;
         color: $gray-600;
     }
+
+    .task-custom-data {
+        max-height: 200px;
+        overflow: auto;
+    }
+
+    .reportbuilder-table td {
+        vertical-align: top;
+    }
 }
 
 .path-admin-tool-uploaduser {

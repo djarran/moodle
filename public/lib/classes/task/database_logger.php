@@ -64,6 +64,12 @@ class database_logger implements task_logger {
         global $DB;
 
         // Write this log to the database.
+        $customdata = null;
+        if (is_a($task, adhoc_task::class)) {
+            $customdata = $task->get_custom_data_as_string();
+            $customdata = $customdata === '' ? null : $customdata;
+        }
+
         $logdata = (object) [
             'type' => is_a($task, scheduled_task::class) ? self::TYPE_SCHEDULED : self::TYPE_ADHOC,
             'component' => $task->get_component(),
@@ -77,6 +83,7 @@ class database_logger implements task_logger {
             'output' => file_get_contents($logpath),
             'hostname' => $task->get_hostname(),
             'pid' => $task->get_pid(),
+            'customdata' => $customdata,
         ];
 
         if (is_a($task, adhoc_task::class) && $userid = $task->get_userid()) {

@@ -1499,7 +1499,8 @@ class manager {
                                (:now1 - ts.timestarted) as time,
                                ts.timestarted,
                                ts.hostname,
-                               ts.pid
+                               ts.pid,
+                               NULL AS customdata
                           FROM {task_scheduled} ts
                          WHERE ts.timestarted IS NOT NULL
                          UNION ALL
@@ -1510,7 +1511,8 @@ class manager {
                                (:now2 - ta.timestarted) as time,
                                ta.timestarted,
                                ta.hostname,
-                               ta.pid
+                               ta.pid,
+                               ta.customdata
                           FROM {task_adhoc} ta
                          WHERE ta.timestarted IS NOT NULL) subquery
               ORDER BY " . $sort;

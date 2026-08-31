@@ -103,6 +103,7 @@ $string['showsummary'] = 'Show ad hoc tasks summary';
 $string['slowtask'] = 'Task has run for longer than {$a}';
 $string['started'] = 'Started';
 $string['taskage'] = 'Run time';
+$string['taskcustomdata'] = 'Custom data';
 $string['taskdetails'] = 'Tasks running for more than {$a->time} (max {$a->maxtime}): {$a->count}';
 $string['taskdisabled'] = 'Task disabled';
 $string['taskfailures'] = '{$a} task(s) failing';

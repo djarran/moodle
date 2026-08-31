@@ -26,3 +26,14 @@
         text-decoration: underline;
     }
 }
+
+#page-admin-tool-task-adhoctasks .task-custom-data,
+#page-admin-tool-task-runningtasks .task-custom-data {
+    max-height: 200px;
+    overflow: auto;
+}
+
+#page-admin-tool-task-adhoctasks .generaltable td,
+#page-admin-tool-task-runningtasks .generaltable td {
+    vertical-align: top;
+}

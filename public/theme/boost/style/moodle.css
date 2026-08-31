@@ -32977,6 +32977,13 @@ img.icon {
   font-size: 0.875rem;
   color: #6a737b;
 }
+#page-admin-tasklogs .task-custom-data {
+  max-height: 200px;
+  overflow: auto;
+}
+#page-admin-tasklogs .reportbuilder-table td {
+  vertical-align: top;
+}
 
 .path-admin-tool-uploaduser .uuwarning {
   background-color: #fcefdc;
