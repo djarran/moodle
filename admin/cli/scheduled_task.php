@@ -25,6 +25,9 @@
 
 define('CLI_SCRIPT', true);
 
+use core\check\result;
+use core\task\helper;
+
 require(__DIR__ . '/../../config.php');
 require_once("$CFG->libdir/clilib.php");
 
@@ -118,10 +121,16 @@ if ($options['list']) {
             $nextrun = get_string('plugindisabled', 'tool_task');
         } else if ($task->get_disabled()) {
             $nextrun = get_string('taskdisabled', 'tool_task');
-        } else if ($nextrun > time()) {
-            $nextrun = userdate($nextrun);
         } else {
-            $nextrun = get_string('asap', 'tool_task');
+            $delta = time() - $nextrun;
+            $nextrun = userdate($nextrun);
+            $timestring = format_time($delta);
+            $status = helper::get_due_status($delta);
+            if ($status === result::CRITICAL) {
+                $nextrun .= ' (' . get_string('overduetask', 'admin', $timestring) . ')';
+            } else if ($status === result::WARNING) {
+                $nextrun .= ' (' . get_string('duetask', 'admin', $timestring) . ')';
+            }
         }
 
         if ($lastrun) {

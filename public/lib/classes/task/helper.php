@@ -16,6 +16,7 @@
 
 namespace core\task;
 
+use core\check\result;
 use core\output\html_writer;
 
 /**
@@ -26,6 +27,25 @@ use core\output\html_writer;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class helper {
+    /**
+     * Get the due status for a task from its time delta.
+     *
+     * @param int $delta Time elapsed since the task's next run time.
+     * @return string
+     */
+    public static function get_due_status(int $delta): string {
+        global $CFG;
+
+        $expectedfrequency = $CFG->expectedcronfrequency ?? MINSECS;
+        if ($delta > DAYSECS) {
+            return result::CRITICAL;
+        }
+        if ($delta > $expectedfrequency + MINSECS) {
+            return result::WARNING;
+        }
+        return result::OK;
+    }
+
     /**
      * Format custom data as preformatted HTML.
      *
